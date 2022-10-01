@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "widdershins": "widdershins --user_templates templates --language_tabs 'http:HTTP' 'javascript:JavaScript' --summary ../openapi.yml -o index.md",
+    "reslate": "npx reslate build",
+    "build": "npm run widdershins; npm run reslate"
+  },
+  "devDependencies": {
+    "reslate": "^3.0.0-5",
+    "widdershins": "^4.0.1"
+  }
+}

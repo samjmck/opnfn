@@ -1,0 +1,17 @@
+{
+  "name": "opnfn",
+  "version": "0.0.0",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^3.16.0",
+    "typescript": "^4.8.2",
+    "wrangler": "2.0.16"
+  },
+  "private": true,
+  "scripts": {
+    "start": "wrangler dev -l -e dev",
+    "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "itty-router": "^2.6.1"
+  }
+}
