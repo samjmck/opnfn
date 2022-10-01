@@ -1,6 +1,7 @@
 name = "opnfn"
 main = "src/index.ts"
 compatibility_date = "2022-09-05"
+account_id = "c020ce55a7892125b33a01786c9a7016"
 
 [env.dev]
 vars = { ALPHA_VANTAGE_API_KEY = "hello" }
