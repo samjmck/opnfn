@@ -109,6 +109,7 @@ function stringToExchange(exchange: string): Exchange {
 export interface HistoricalReadableStore {
     // Time = milliseconds since UNIX epoch (Date.now())
     getAtClose(exchange: Exchange, ticker: string, time: number): Promise<Money>;
+    getAtCloseInPeriod(exchange: Exchange, ticker: string, from: number, to: number): Promise<Money>;
 }
 
 export interface ReadableStore {

@@ -13,7 +13,7 @@ const combinedReadableStore = new CombinedReadableStore([
 ]);
 const combinedReadableFxStore = new CombinedReadableFXStore([
 	yahooFinance,
-])
+]);
 
 const router = Router();
 
