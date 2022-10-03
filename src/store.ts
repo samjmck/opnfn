@@ -106,10 +106,21 @@ function stringToExchange(exchange: string): Exchange {
     }
 }
 
+export enum Interval {
+    Day = "day",
+}
+
 export interface HistoricalReadableStore {
     // Time = milliseconds since UNIX epoch (Date.now())
     getAtClose(exchange: Exchange, ticker: string, time: number): Promise<Money>;
-    getAtCloseInPeriod(exchange: Exchange, ticker: string, from: number, to: number): Promise<Money>;
+    getAtCloseInPeriod(
+        exchange: Exchange,
+        ticker: string,
+        startTime: number,
+        endTime: number,
+        interval: Interval,
+        adjustedForStockSplits: boolean,
+    ): Promise<Map<number, Money>>;
 }
 
 export interface ReadableStore {
@@ -122,6 +133,13 @@ export interface ReadableFXStore {
 
 export interface HistoricalReadableFXStore {
     getExchangeRateAtClose(from: Currency, to: Currency, time: number): Promise<number>;
+    getExchangeRateInPeriod(
+        from: Currency,
+        to: Currency,
+        startTime: number,
+        endTime: number,
+        interval: Interval,
+    ): Promise<Map<number, number>>;
 }
 
 export interface StockSplitStore {

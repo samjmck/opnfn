@@ -1,11 +1,11 @@
 import {
     Exchange,
     HistoricalReadableFXStore,
-    HistoricalReadableStore,
+    HistoricalReadableStore, Interval,
     ReadableFXStore,
     ReadableStore, StockSplitStore
 } from "../store.js";
-import { Currency, moneyAmountStringToInteger, stringToCurrency } from "../money";
+import { Currency, Money, moneyAmountStringToInteger, stringToCurrency } from "../money";
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {
@@ -117,6 +117,40 @@ export class YahooFinance implements
         return Number(exchangeRate);
     }
 
+    async getExchangeRateInPeriod(
+        from: Currency,
+        to: Currency,
+        startTime: number,
+        endTime: number,
+        interval: Interval,
+    ) {
+        const startSecondsSinceEpoch = Math.floor(startTime / 1000);
+        const endSecondsSinceEpoch = Math.floor(endTime / 1000) + 24 * 60 * 60;
+        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${from}${to}=X?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
+        const csv = await response.text();
+
+        const rows = csv.split("\n");
+        // Header is rows[0], after that comes data rows
+        // Header is Date,Open,High,Low,Close,Adj Close,Volume
+        const historicPriceMap = new Map<number, number>();
+        for(const row of rows) {
+            if(row === "") {
+                break;
+            }
+            const columns = row.split(",");
+            const time = Date.parse(columns[0]).valueOf();
+            if(time < startTime) {
+                continue;
+            }
+            if(time > endTime) {
+                break;
+            }
+            historicPriceMap.set(time, Number(columns[4]));
+        }
+
+        return historicPriceMap;
+    }
+
     async getAtClose(
         exchange: Exchange,
         ticker: string,
@@ -145,13 +179,54 @@ export class YahooFinance implements
         const priceString = dataColumns[4];
         const amount = moneyAmountStringToInteger(priceString, ".");
 
-        const livePrice = await this.get(exchange, ticker);
-        const currency = livePrice.currency;
+        const { currency } = await this.get(exchange, ticker);
 
         return {
             currency,
             amount,
         };
+    }
+
+    async getAtCloseInPeriod(
+        exchange: Exchange,
+        ticker: string,
+        startTime: number,
+        endTime: number,
+        interval: Interval,
+        adjustedForStockSplits: boolean,
+    ) {
+        const startSecondsSinceEpoch = Math.floor(startTime / 1000);
+        const endSecondsSinceEpoch = Math.floor(endTime / 1000) + 24 * 60 * 60;
+        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=${adjustedForStockSplits ? "true" : "false"}`);
+        const csv = await response.text();
+
+        const { currency } = await this.get(exchange, ticker);
+
+        const rows = csv.split("\n");
+        // Header is rows[0], after that comes data rows
+        // Header is Date,Open,High,Low,Close,Adj Close,Volume
+        const historicPriceMap = new Map<number, Money>();
+        for(const row of rows) {
+            if(row === "") {
+                break;
+            }
+            const columns = row.split(",");
+            const time = Date.parse(columns[0]).valueOf();
+            if(time < startTime) {
+                continue;
+            }
+            if(time > endTime) {
+                break;
+            }
+            const amount = moneyAmountStringToInteger(columns[4], ".");
+
+            historicPriceMap.set(time, {
+                currency,
+                amount: Number(columns[4]),
+            });
+        }
+
+        return historicPriceMap;
     }
 
     async get(
