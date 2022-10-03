@@ -1,6 +1,7 @@
 import { YahooFinance } from "./stores/YahooFinance";
 import { Router } from "itty-router";
 import {
+	CombinedHistoricalReadableFXStore,
 	CombinedHistoricalReadableStore,
 	CombinedReadableFXStore,
 	CombinedReadableStore
@@ -19,6 +20,9 @@ const combinedHistoricalReadableStore = new CombinedHistoricalReadableStore([
 	yahooFinance,
 ])
 const combinedReadableFxStore = new CombinedReadableFXStore([
+	yahooFinance,
+]);
+const combinedHistoricalReadableFxStore = new CombinedHistoricalReadableFXStore([
 	yahooFinance,
 ]);
 
@@ -112,6 +116,44 @@ router.get("/fx/from/:from/to/:to/latest", async request => {
 				status: 500,
 			},
 		);
+	}
+});
+
+router.get("/fx/from/:from/to/:to/historic", async request => {
+	const { from, to } = <{ from: Currency, to: Currency }> request.params;
+	if(from === undefined || to === undefined) {
+		return new Response(null, { status: 422 });
+	}
+	const { startTime: startTimeString, endTime: endTimeString, interval } =
+		<{ startTime: string, endTime: string, interval?: Interval }> request.query;
+	if(startTimeString === undefined || endTimeString === undefined) {
+		return new Response(null, { status: 422 });
+	}
+	const startTime = Number(startTimeString);
+	const endTime = Number(endTimeString);
+	try {
+		const historicalPriceMap = await combinedHistoricalReadableFxStore.getExchangeRateInPeriod(
+			from,
+			to,
+			startTime,
+			endTime,
+			interval || Interval.Day,
+		);
+		const datePricePairs: [number, number][] = [];
+		for(const [time, value] of historicalPriceMap) {
+			datePricePairs.push([time, value]);
+		}
+		return new Response(
+			JSON.stringify(datePricePairs),
+			{
+				status: 202,
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+		);
+	} catch(error) {
+		return new Response(JSON.stringify({ error }), { status: 500 });
 	}
 });
 

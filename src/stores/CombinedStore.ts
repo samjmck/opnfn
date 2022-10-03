@@ -96,7 +96,7 @@ export class CombinedReadableFXStore implements ReadableFXStore {
     }
 }
 
-export class CombineHistoricalReadableFXStore implements HistoricalReadableFXStore {
+export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXStore {
     constructor(private stores: HistoricalReadableFXStore[]) {}
 
     async getExchangeRateAtClose(

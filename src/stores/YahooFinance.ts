@@ -133,7 +133,7 @@ export class YahooFinance implements
         // Header is rows[0], after that comes data rows
         // Header is Date,Open,High,Low,Close,Adj Close,Volume
         const historicPriceMap = new Map<number, number>();
-        for(const row of rows) {
+        for(const row of rows.slice(1)) {
             if(row === "") {
                 break;
             }
@@ -206,7 +206,7 @@ export class YahooFinance implements
         // Header is rows[0], after that comes data rows
         // Header is Date,Open,High,Low,Close,Adj Close,Volume
         const historicPriceMap = new Map<number, Money>();
-        for(const row of rows) {
+        for(const row of rows.slice(1)) {
             if(row === "") {
                 break;
             }
