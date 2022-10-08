@@ -1,5 +1,5 @@
 name = "opnfn-v1"
-main = "src/index.ts"
+main = "src/routes/index.ts"
 compatibility_date = "2022-09-05"
 account_id = "c020ce55a7892125b33a01786c9a7016"
 

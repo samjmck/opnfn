@@ -14,7 +14,7 @@ export class CombinedHistoricalReadableStore implements HistoricalReadableStore 
     async getAtClose(
         exchange: Exchange,
         ticker: string,
-        time: number,
+        time: Date,
     ) {
         for(const store of this.stores) {
             try {
@@ -31,17 +31,17 @@ export class CombinedHistoricalReadableStore implements HistoricalReadableStore 
         throw new Error(`all stores failed for exchange ${exchange} ticker ${ticker}`);
     }
 
-    async getAtCloseInPeriod(
+    async getHistorical(
         exchange: Exchange,
         ticker: string,
-        startTime: number,
-        endTime: number,
+        startTime: Date,
+        endTime: Date,
         interval: Interval,
         adjustedForStockSplits: boolean,
     ) {
         for(const store of this.stores) {
             try {
-                return await store.getAtCloseInPeriod(
+                return await store.getHistorical(
                     exchange,
                     ticker,
                     startTime,
@@ -102,7 +102,7 @@ export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXSt
     async getExchangeRateAtClose(
         from: Currency,
         to: Currency,
-        time: number,
+        time: Date,
     ) {
         for(const store of this.stores) {
             try {
@@ -115,16 +115,16 @@ export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXSt
         throw new Error(`all stores failed for from currency ${from} to currency ${to} at time ${time}`);
     }
 
-    async getExchangeRateInPeriod(
+    async getHistoricalExchangeRate(
         from: Currency,
         to: Currency,
-        startTime: number,
-        endTime: number,
+        startTime: Date,
+        endTime: Date,
         interval: Interval,
     ) {
         for(const store of this.stores) {
             try {
-                return await store.getExchangeRateInPeriod(
+                return await store.getHistoricalExchangeRate(
                     from,
                     to,
                     startTime,

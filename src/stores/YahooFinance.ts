@@ -3,9 +3,9 @@ import {
     HistoricalReadableFXStore,
     HistoricalReadableStore, Interval,
     ReadableFXStore,
-    ReadableStore, StockSplitStore
+    ReadableStore, Split, StockSplitStore
 } from "../store.js";
-import { Currency, Money, moneyAmountStringToInteger, stringToCurrency } from "../money";
+import { Currency, Money, moneyAmountStringToInteger, OHLC, stringToCurrency } from "../money";
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {
@@ -92,9 +92,9 @@ export class YahooFinance implements
     }
 
     async getExchangeRateAtClose(
-        from: Currency, to: Currency, time: number
+        from: Currency, to: Currency, time: Date
     ) {
-        const secondsSinceEpoch = Math.floor(time / 1000);
+        const secondsSinceEpoch = Math.floor(time.valueOf() / 1000);
         const dayAfterSecondsSinceEpoch = secondsSinceEpoch + 24 * 60 * 60;
         // Gives us space if the time is in a weekend or holiday period
         const startSecondsSinceEpoch = secondsSinceEpoch - 24 * 60 * 60 * 31;
@@ -108,7 +108,7 @@ export class YahooFinance implements
         // Why last row? Imagine you are trying to see the price during a weekend or holiday period. The last row
         // will be the last updated price for that time
         let rowIndex = rows.length - 1;
-        while(Date.parse(rows[rowIndex].split(",")[0]).valueOf() > time) {
+        while(Date.parse(rows[rowIndex].split(",")[0]).valueOf() > time.valueOf()) {
             rowIndex -= 1;
         }
         const dataRow = rows[rowIndex];
@@ -117,35 +117,44 @@ export class YahooFinance implements
         return Number(exchangeRate);
     }
 
-    async getExchangeRateInPeriod(
+    async getHistoricalExchangeRate(
         from: Currency,
         to: Currency,
-        startTime: number,
-        endTime: number,
+        startTime: Date,
+        endTime: Date,
         interval: Interval,
     ) {
-        const startSecondsSinceEpoch = Math.floor(startTime / 1000);
-        const endSecondsSinceEpoch = Math.floor(endTime / 1000) + 24 * 60 * 60;
+        const startSecondsSinceEpoch = Math.floor(startTime.valueOf() / 1000);
+        const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000) + 24 * 60 * 60;
         const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${from}${to}=X?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
         const csv = await response.text();
 
         const rows = csv.split("\n");
         // Header is rows[0], after that comes data rows
         // Header is Date,Open,High,Low,Close,Adj Close,Volume
-        const historicPriceMap = new Map<number, number>();
+        const historicPriceMap = new Map<Date, OHLC>();
         for(const row of rows.slice(1)) {
             if(row === "") {
                 break;
             }
             const columns = row.split(",");
-            const time = Date.parse(columns[0]).valueOf();
-            if(time < startTime) {
+            const time = new Date(columns[0]);
+            if(time.valueOf() < startTime.valueOf()) {
                 continue;
             }
-            if(time > endTime) {
+            if(time.valueOf() > endTime.valueOf()) {
                 break;
             }
-            historicPriceMap.set(time, Number(columns[4]));
+            const open = Number(columns[1]);
+            const high = Number(columns[1]);
+            const low = Number(columns[2]);
+            const close = Number(columns[3]);
+            historicPriceMap.set(time, {
+                open,
+                high,
+                low,
+                close,
+            });
         }
 
         return historicPriceMap;
@@ -154,9 +163,9 @@ export class YahooFinance implements
     async getAtClose(
         exchange: Exchange,
         ticker: string,
-        time: number,
+        time: Date,
     ) {
-        const secondsSinceEpoch = Math.floor(time / 1000);
+        const secondsSinceEpoch = Math.floor(time.valueOf() / 1000);
         const dayAfterSecondsSinceEpoch = secondsSinceEpoch + 24 * 60 * 60;
         // Gives us space if the time is in a weekend or holiday period
         const startSecondsSinceEpoch = secondsSinceEpoch - 24 * 60 * 60 * 31;
@@ -171,7 +180,7 @@ export class YahooFinance implements
         // Why last row? Imagine you are trying to see the price during a weekend or holiday period. The last row
         // will be the last updated price for that time
         let rowIndex = rows.length - 1;
-        while(Date.parse(rows[rowIndex].split(",")[0]).valueOf() > time) {
+        while(Date.parse(rows[rowIndex].split(",")[0]).valueOf() > time.valueOf()) {
             rowIndex -= 1;
         }
         const dataRow = rows[rowIndex];
@@ -187,46 +196,67 @@ export class YahooFinance implements
         };
     }
 
-    async getAtCloseInPeriod(
+    async getHistorical(
         exchange: Exchange,
         ticker: string,
-        startTime: number,
-        endTime: number,
+        startTime: Date,
+        endTime: Date,
         interval: Interval,
         adjustedForStockSplits: boolean,
     ) {
-        const startSecondsSinceEpoch = Math.floor(startTime / 1000);
-        const endSecondsSinceEpoch = Math.floor(endTime / 1000) + 24 * 60 * 60;
-        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=${adjustedForStockSplits ? "true" : "false"}`);
+        const startSecondsSinceEpoch = Math.floor(startTime.valueOf() / 1000);
+        const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000) + 24 * 60 * 60;
+        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
         const csv = await response.text();
-
-        const { currency } = await this.get(exchange, ticker);
 
         const rows = csv.split("\n");
         // Header is rows[0], after that comes data rows
         // Header is Date,Open,High,Low,Close,Adj Close,Volume
-        const historicPriceMap = new Map<number, Money>();
+        let splits: Split[] = [];
+        let sharesMultiplier = 1;
+        if(!adjustedForStockSplits) {
+            splits = await this.getStockSplits(startTime, new Date(), exchange, ticker);
+            for(const { split } of splits) {
+                sharesMultiplier *= split;
+            }
+        }
+        const historicPriceMap = new Map<Date, OHLC>();
         for(const row of rows.slice(1)) {
             if(row === "") {
                 break;
             }
             const columns = row.split(",");
-            const time = Date.parse(columns[0]).valueOf();
-            if(time < startTime) {
+            const time = new Date(columns[0]);
+            if(time.valueOf() < startTime.valueOf()) {
                 continue;
             }
-            if(time > endTime) {
+            if(time.valueOf() > endTime.valueOf()) {
                 break;
             }
-            const amount = moneyAmountStringToInteger(columns[4], ".");
+            if(splits.length > 0 && splits[0].time.valueOf() <= time.valueOf()) {
+                sharesMultiplier /= splits[0].split;
+                splits.splice(0, 1);
+            }
+
+            const open = Math.floor(moneyAmountStringToInteger(columns[1], ".", 2) * sharesMultiplier);
+            const high = Math.floor(moneyAmountStringToInteger(columns[2], ".", 2) * sharesMultiplier);
+            const low = Math.floor(moneyAmountStringToInteger(columns[3], ".", 2) * sharesMultiplier);
+            const close = Math.floor(moneyAmountStringToInteger(columns[4], ".", 2) * sharesMultiplier);
 
             historicPriceMap.set(time, {
-                currency,
-                amount: Number(columns[4]),
+                open,
+                high,
+                low,
+                close,
             });
         }
 
-        return historicPriceMap;
+        const { currency } = await this.get(exchange, ticker);
+
+        return {
+            currency,
+            map: historicPriceMap,
+        };
     }
 
     async get(
@@ -241,27 +271,46 @@ export class YahooFinance implements
         };
     }
 
-    async getStockSplitTotalMultiplier(
-        since: number,
+    async getStockSplits(
+        startTime: Date,
+        endTime: Date,
         exchange: Exchange,
         ticker: string,
-    ): Promise<number> {
-        const secondsSinceEpoch = Math.floor(since / 1000);
-        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${secondsSinceEpoch}&period2=${Date.now()}&interval=1d&events=split&includeAdjustedClose=true`);
+    ): Promise<Split[]> {
+        const secondsSinceEpoch = Math.floor(startTime.valueOf() / 1000);
+        const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000);
+
+        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${secondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=split&includeAdjustedClose=true`);
         const csv = await response.text();
 
+        const splits: Split[] = [];
         // Header is Date,Stock Splits
         // 1992-06-15,3:2
         // 1994-05-23,2:1
         // ...
         const rows = csv.trimEnd().split("\n");
-        let multiplier = 1;
         for(const row of rows.slice(1)) {
             const [date, splitString] = row.split(",");
             const splitNumbers = splitString.split(":");
-            multiplier *= Number(splitNumbers[0]) / Number(splitNumbers[1]);
+            splits.push({
+                time: new Date(date),
+                split: Number(splitNumbers[0]),
+            })
         }
 
+        return splits.sort((a, b) => a.time.valueOf() - b.time.valueOf());
+    }
+
+    async getStockSplitTotalMultiplier(
+        since: Date,
+        exchange: Exchange,
+        ticker: string,
+    ): Promise<number> {
+        const splits = await this.getStockSplits(since, new Date(), exchange, ticker);
+        let multiplier = 1;
+        for(const { split: splitMultiplier } of splits) {
+            multiplier *= splitMultiplier;
+        }
         return multiplier;
     }
 }

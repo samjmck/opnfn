@@ -1,4 +1,4 @@
-import { Currency, Money } from "./money";
+import { Currency, Money, OHLC } from "./money";
 
 export enum Exchange {
     NYSE,
@@ -112,15 +112,18 @@ export enum Interval {
 
 export interface HistoricalReadableStore {
     // Time = milliseconds since UNIX epoch (Date.now())
-    getAtClose(exchange: Exchange, ticker: string, time: number): Promise<Money>;
-    getAtCloseInPeriod(
+    getAtClose(exchange: Exchange, ticker: string, time: Date): Promise<Money>;
+    getHistorical(
         exchange: Exchange,
         ticker: string,
-        startTime: number,
-        endTime: number,
+        startTime: Date,
+        endTime: Date,
         interval: Interval,
         adjustedForStockSplits: boolean,
-    ): Promise<Map<number, Money>>;
+    ): Promise<{
+        currency: Currency;
+        map: Map<Date, OHLC>;
+    }>;
 }
 
 export interface ReadableStore {
@@ -132,16 +135,27 @@ export interface ReadableFXStore {
 }
 
 export interface HistoricalReadableFXStore {
-    getExchangeRateAtClose(from: Currency, to: Currency, time: number): Promise<number>;
-    getExchangeRateInPeriod(
+    getExchangeRateAtClose(from: Currency, to: Currency, time: Date): Promise<number>;
+    getHistoricalExchangeRate(
         from: Currency,
         to: Currency,
-        startTime: number,
-        endTime: number,
+        startTime: Date,
+        endTime: Date,
         interval: Interval,
-    ): Promise<Map<number, number>>;
+    ): Promise<Map<Date, OHLC>>;
+}
+
+export interface Split {
+    time: Date;
+    split: number;
 }
 
 export interface StockSplitStore {
-    getStockSplitTotalMultiplier(since: number, exchange: Exchange, ticker: string): Promise<number>;
+    getStockSplitTotalMultiplier(since: Date, exchange: Exchange, ticker: string): Promise<number>;
+    getStockSplits(
+        startTime: Date,
+        endTime: Date,
+        exchange: Exchange,
+        ticker: string,
+    ): Promise<Split[]>
 }

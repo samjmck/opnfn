@@ -36,10 +36,17 @@ export interface Money {
     amount: number;
 }
 
+export interface OHLC {
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+}
+
 // Converts a value such as "101.11", "90.10", "90.1" to 10111, 9010, 9010 of type number
 export function moneyAmountStringToInteger(money: string, decimalSeparator = ".", expectedDecimals = 2) {
     const decimalSeparatorIndex = money.indexOf(decimalSeparator);
-    if(decimalSeparatorIndex == -1) {
+    if(decimalSeparatorIndex === -1) {
         return Number(money) * (10 ** expectedDecimals);
     }
 
