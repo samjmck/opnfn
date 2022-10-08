@@ -25,6 +25,7 @@ registerSecuritiesRoutes(
 	router,
 	combinedReadableStore,
 	combinedHistoricalReadableStore,
+	caches.default,
 );
 
 const combinedReadableFxStore = new CombinedReadableFXStore([

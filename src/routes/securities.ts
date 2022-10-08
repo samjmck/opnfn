@@ -7,6 +7,7 @@ export function registerSecuritiesRoutes(
     router: Router,
     combinedReadableStore: CombinedReadableStore,
     combinedHistoricalReadableStore: CombinedHistoricalReadableStore,
+    cache: Cache,
 ) {
     router.get("/prices/exchange/:mic/security/:ticker/latest", async request => {
         const { mic, ticker } = <{ mic: string, ticker: string }> request.params;
@@ -37,7 +38,15 @@ export function registerSecuritiesRoutes(
         }
     });
 
-    router.get("/prices/exchange/:mic/security/:ticker/historical", async request => {
+    router.get("/prices/exchange/:mic/security/:ticker/historical", async(request, event) => {
+        const cacheKey = new Request((new URL(request.url)).toString(), request);
+        let cachedResponse = await cache.match(cacheKey);
+
+        if(cachedResponse) {
+            console.log("using cached");
+            return cachedResponse;
+        }
+
         const { mic, ticker } = <{ mic: string, ticker: string }> request.params;
         if(mic === undefined || ticker === undefined) {
             return new Response(null, { status: 422 });
@@ -66,7 +75,7 @@ export function registerSecuritiesRoutes(
                     ...ohlc,
                 });
             }
-            return new Response(
+            const response = new Response(
                 JSON.stringify({
                     currency,
                     prices,
@@ -76,10 +85,11 @@ export function registerSecuritiesRoutes(
                     headers: {
                         "Content-Type": "application/json",
                         "Cache-Control": "shared, max-age=31536000, stale-if-error=31536000",
-                        "CDN-Cache-Control": "shared, max-age=31536000, stale-if-error=31536000",
                     },
                 },
             );
+            event.waitUntil(cache.put(cacheKey, response.clone()));
+            return response;
         } catch(error) {
             return new Response(JSON.stringify({ error }), { status: 500 });
         }
