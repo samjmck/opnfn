@@ -25,7 +25,7 @@ export function registerSecuritiesRoutes(
                 money.amount /= 100;
             }
             return new Response(
-                JSON.stringify(await combinedReadableStore.getByTicker(exchange, ticker)),
+                JSON.stringify(money),
                 {
                     status: 202,
                     headers: {
