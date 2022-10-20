@@ -78,9 +78,6 @@ paths:
         - name: end
           in: path
           required: true
-          examples:
-            date:
-              $ref: '#/components/examples/date'
           description: The end date
           example: 2020-09-04T00:00:00.000Z
           schema:

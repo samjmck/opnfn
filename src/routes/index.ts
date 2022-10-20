@@ -16,8 +16,6 @@ const yahooFinance = new YahooFinance();
 
 const router = Router({ base: "/v1" });
 
-router.all()
-
 const combinedReadableStore = new CombinedReadableStore([
 	yahooFinance,
 ]);
