@@ -203,8 +203,6 @@ components:
     Ticker:
       type: string
       format: ticker
-      minLength: 1
-      maxLength: 7
       description: >
         A security's ticker symbol on a certain exchange.
         Note that the ticker symbol of a security can vary depending on the exchange.
@@ -221,8 +219,6 @@ components:
     MIC:
       type: string
       format: ISO 10383 exchange MIC
-      minLength: 4
-      maxLength: 4
       description: >
         The Market Identifier Code (MIC) for the exchange where you would like to fetch the latest price from.
         For example, the NYSE has the MIC `XNYS` while the London Stock Exchange has the MIC `XLON`. [See this page](https://www.iso20022.org/market-identifier-codes) for a list of exchanges with corresponding MICs.
