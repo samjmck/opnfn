@@ -41,6 +41,8 @@ function getCompatibleExchangeSuffix(exchange: Exchange) {
             return "CO";
         case Exchange.BorseBerlin:
             return "BE";
+        case Exchange.KoreaExchange:
+            return "KSC"
         default:
             return "";
     }
@@ -76,6 +78,8 @@ function searchExchangeResultToExchange(exchange: string): Exchange {
             return Exchange.NEOExchange;
         case "FRA":
             return Exchange.BorseFrankfurt;
+        case "KSC":
+            return Exchange.KoreaExchange;
         default:
             throw new Error(`could not find exchange for Yahoo Finance search result exchange "${exchange}"`);
     }
@@ -132,9 +136,8 @@ export class YahooFinance implements
 {
     async search(term: string) {
         const response = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${term}&newsCount=0&listsCount=0`);
-        console.log(response.status);
         const json = <YahooFinanceSearchResponse> (await response.json());
-        console.log(json);
+        console.log(JSON.stringify(json, null, 4));
         const results: SearchResultItem[] = [];
         for(const quote of json.quotes) {
 

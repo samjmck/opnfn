@@ -79,8 +79,6 @@ export function exchangeToOperatingMic(exchange: Exchange): string {
             return "XETR";
         case Exchange.SIXSwissExchange:
             return "XSWX";
-        case Exchange.KoreaExchange:
-            return "XKRX";
         case Exchange.BorseFrankfurt:
             return "XFRA";
         case Exchange.BorseBerlin:
@@ -101,6 +99,8 @@ export function exchangeToOperatingMic(exchange: Exchange): string {
             return "XTSE";
         case Exchange.NEOExchange:
             return "NEOE";
+        case Exchange.KoreaExchange:
+            return "XKRX";
         default:
             throw new Error(`could not get MIC of "${exchange}"`);
     }
@@ -140,6 +140,8 @@ export function micToExchange(mic: string): Exchange {
             return Exchange.NasdaqStockholm;
         case "XHEL":
             return Exchange.NasdaqHelsinki;
+        case "XKRX":
+            return Exchange.KoreaExchange;
         default:
             throw new Error("could not find exchange");
     }
