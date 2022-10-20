@@ -1,11 +1,14 @@
 import {
-    Exchange,
     HistoricalReadableFXStore,
-    HistoricalReadableStore, Interval,
+    HistoricalReadableStore,
+    Interval,
     ReadableFXStore,
-    ReadableStore, Split, StockSplitStore
+    ReadableStore, SearchResultItem, SearchStore,
+    Split,
+    StockSplitStore
 } from "../store.js";
-import { Currency, Money, moneyAmountStringToInteger, OHLC, stringToCurrency } from "../money";
+import { Currency, moneyAmountStringToInteger, OHLC, stringToCurrency } from "../money";
+import { Exchange } from "../exchange.js";
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {
@@ -36,8 +39,45 @@ function getCompatibleExchangeSuffix(exchange: Exchange) {
             return "TSRC";
         case Exchange.NasdaqCopenhagen:
             return "CO";
+        case Exchange.BorseBerlin:
+            return "BE";
         default:
             return "";
+    }
+}
+
+function searchExchangeResultToExchange(exchange: string): Exchange {
+    switch(exchange) {
+        case "BRU":
+            return Exchange.EuronextBrussels;
+        case "MIL":
+            return Exchange.EuronextMilan;
+        case "LSE":
+            return Exchange.LondonStockExchange;
+        case "NMS":
+            return Exchange.Nasdaq;
+        case "NYQ":
+            return Exchange.NYSE;
+        case "PNK":
+            return Exchange.OTC;
+        case "AMS":
+            return Exchange.EuronextAmsterdam;
+        case "HEL":
+            return Exchange.NasdaqHelsinki;
+        case "GER":
+            return Exchange.Xetra;
+        case "CPH":
+            return Exchange.NasdaqCopenhagen;
+        case "BER":
+            return Exchange.BorseBerlin;
+        case "MEX":
+            return Exchange.BolsaMexicana;
+        case "NEO":
+            return Exchange.NEOExchange;
+        case "FRA":
+            return Exchange.BorseFrankfurt;
+        default:
+            throw new Error(`could not find exchange for Yahoo Finance search result exchange "${exchange}"`);
     }
 }
 
@@ -53,6 +93,24 @@ function formatSymbol(exchange: Exchange, ticker: string) {
     }
 }
 
+interface YahooFinanceSearchResponse {
+    quotes: {
+        exchange: string;
+        shortname: string;
+        quoteType: string;
+        symbol: string;
+        index: string;
+        score: number;
+        typeDisp: string;
+        longname: string;
+        exchDisp: string;
+        sector: string;
+        industry: string;
+        dispSecIndFlag: boolean;
+        isYahooFinance: boolean;
+    }[];
+}
+
 interface YahooFinanceQueryResponse {
     chart: {
         result: {
@@ -65,12 +123,36 @@ interface YahooFinanceQueryResponse {
 }
 
 export class YahooFinance implements
+    SearchStore,
     ReadableStore,
     ReadableFXStore,
     HistoricalReadableStore,
     HistoricalReadableFXStore,
     StockSplitStore
 {
+    async search(term: string) {
+        const response = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${term}&newsCount=0&listsCount=0`);
+        console.log(response.status);
+        const json = <YahooFinanceSearchResponse> (await response.json());
+        console.log(json);
+        const results: SearchResultItem[] = [];
+        for(const quote of json.quotes) {
+
+            // e.g. AAPL.MX -> AAPL
+            let ticker = quote.symbol;
+            if(ticker.indexOf(".") > -1) {
+                ticker = ticker.split(".")[0];
+            }
+
+            results.push({
+                name: quote.longname || quote.shortname,
+                ticker,
+                exchange: searchExchangeResultToExchange(quote.exchange),
+            });
+        }
+        return results;
+    }
+
     async getExchangeRate(
         from: Currency,
         to: Currency
@@ -108,13 +190,16 @@ export class YahooFinance implements
         // Why last row? Imagine you are trying to see the price during a weekend or holiday period. The last row
         // will be the last updated price for that time
         let rowIndex = rows.length - 1;
-        while(Date.parse(rows[rowIndex].split(",")[0]).valueOf() > time.valueOf()) {
+        while(Date.parse(rows[rowIndex].split(",")[0]) > time.valueOf()) {
             rowIndex -= 1;
         }
         const dataRow = rows[rowIndex];
         const dataColumns = dataRow.split(",");
         const exchangeRate = dataColumns[4];
-        return Number(exchangeRate);
+        return {
+            time: new Date(rows[rowIndex].split(",")[0]),
+            rate: Number(exchangeRate)
+        };
     }
 
     async getHistoricalExchangeRate(
@@ -160,49 +245,30 @@ export class YahooFinance implements
         return historicPriceMap;
     }
 
-    async getAtClose(
+    async getAtCloseByTicker(
         exchange: Exchange,
         ticker: string,
         time: Date,
+        adjustedForSplits: boolean,
     ) {
-        const secondsSinceEpoch = Math.floor(time.valueOf() / 1000);
-        const dayAfterSecondsSinceEpoch = secondsSinceEpoch + 24 * 60 * 60;
-        // Gives us space if the time is in a weekend or holiday period
-        const startSecondsSinceEpoch = secondsSinceEpoch - 24 * 60 * 60 * 31;
-        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${startSecondsSinceEpoch}&period2=${dayAfterSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
-        const csv = await response.text();
-
-        const rows = csv.split("\n");
-
-        // Header is rows[0], after that comes data rows
-        // Header is Date,Open,High,Low,Close,Adj Close,Volume
-
-        // Why last row? Imagine you are trying to see the price during a weekend or holiday period. The last row
-        // will be the last updated price for that time
-        let rowIndex = rows.length - 1;
-        while(Date.parse(rows[rowIndex].split(",")[0]).valueOf() > time.valueOf()) {
-            rowIndex -= 1;
-        }
-        const dataRow = rows[rowIndex];
-        const dataColumns = dataRow.split(",");
-        const priceString = dataColumns[4];
-        const amount = moneyAmountStringToInteger(priceString, ".");
-
-        const { currency } = await this.get(exchange, ticker);
-
+        // + 14 days
+        const endTime = new Date(time.valueOf() + 14 * 24 * 60 * 60 * 1000);
+        const historical = await this.getHistoricalByTicker(exchange, ticker, time, endTime, Interval.Day, adjustedForSplits);
+        const [firstTime, ohlc] = <[Date, OHLC]> historical.map.entries().next().value;
         return {
-            currency,
-            amount,
+            time: firstTime,
+            currency: historical.currency,
+            amount: ohlc.close,
         };
     }
 
-    async getHistorical(
+    async getHistoricalByTicker(
         exchange: Exchange,
         ticker: string,
         startTime: Date,
         endTime: Date,
         interval: Interval,
-        adjustedForStockSplits: boolean,
+        adjustedForSplits: boolean,
     ) {
         const startSecondsSinceEpoch = Math.floor(startTime.valueOf() / 1000);
         const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000) + 24 * 60 * 60;
@@ -214,7 +280,7 @@ export class YahooFinance implements
         // Header is Date,Open,High,Low,Close,Adj Close,Volume
         let splits: Split[] = [];
         let sharesMultiplier = 1;
-        if(!adjustedForStockSplits) {
+        if(!adjustedForSplits) {
             splits = await this.getStockSplits(startTime, new Date(), exchange, ticker);
             for(const { split } of splits) {
                 sharesMultiplier *= split;
@@ -251,7 +317,7 @@ export class YahooFinance implements
             });
         }
 
-        const { currency } = await this.get(exchange, ticker);
+        const { currency } = await this.getByTicker(exchange, ticker);
 
         return {
             currency,
@@ -259,7 +325,7 @@ export class YahooFinance implements
         };
     }
 
-    async get(
+    async getByTicker(
         exchange: Exchange,
         ticker: string,
     ) {

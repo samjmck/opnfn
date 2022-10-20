@@ -1,5 +1,6 @@
-import { Exchange, ReadableStore } from "../store";
+import { ReadableStore } from "../store";
 import { Currency, moneyAmountStringToInteger } from "../money";
+import { Exchange } from "../exchange.js";
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {
@@ -94,7 +95,7 @@ interface GlobalQuoteResponse {
 export class AlphaVantage implements ReadableStore {
     constructor(private apiKey: string) {}
 
-    async get(
+    async getByTicker(
         exchange: Exchange,
         ticker: string,
     ) {

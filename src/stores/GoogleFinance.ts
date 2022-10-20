@@ -1,5 +1,6 @@
-import { Exchange, ReadableStore } from "../store";
+import { ReadableStore } from "../store";
 import { moneyAmountStringToInteger, stringToCurrency } from "../money";
+import { Exchange } from "../exchange.js";
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {
@@ -42,7 +43,7 @@ function toKey(exchange: Exchange, ticker: string) {
 }
 
 export class GoogleFinance implements ReadableStore {
-    async get(
+    async getByTicker(
         exchange: Exchange,
         ticker: string,
     ) {

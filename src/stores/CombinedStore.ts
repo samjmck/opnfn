@@ -1,27 +1,47 @@
 import {
-    Exchange,
     HistoricalReadableFXStore,
     HistoricalReadableStore,
     Interval,
     ReadableFXStore,
-    ReadableStore
+    ReadableStore, SearchStore
 } from "../store";
 import { Currency } from "../money.js";
+import { Exchange } from "../exchange.js";
+
+export class CombinedSearchStore implements SearchStore {
+    constructor(private stores: SearchStore[]) {}
+
+    async search(term: string) {
+        for(const store of this.stores) {
+            try {
+                return await store.search(
+                    term
+                );
+            } catch(error) {
+                console.error(`store ${store} failed search with term "${term}`, error);
+                console.log("trying next store...");
+            }
+        }
+        throw new Error(`all stores failed search with term "${term}"`);
+    }
+}
 
 export class CombinedHistoricalReadableStore implements HistoricalReadableStore {
     constructor(private stores: HistoricalReadableStore[]) {}
 
-    async getAtClose(
+    async getAtCloseByTicker(
         exchange: Exchange,
         ticker: string,
         time: Date,
+        adjustedForSplits: boolean,
     ) {
         for(const store of this.stores) {
             try {
-                return await store.getAtClose(
+                return await store.getAtCloseByTicker(
                     exchange,
                     ticker,
                     time,
+                    adjustedForSplits,
                 );
             } catch(error) {
                 console.error(`store ${store} failed with exchange ${exchange} ticker ${ticker}: `, error);
@@ -31,7 +51,7 @@ export class CombinedHistoricalReadableStore implements HistoricalReadableStore 
         throw new Error(`all stores failed for exchange ${exchange} ticker ${ticker}`);
     }
 
-    async getHistorical(
+    async getHistoricalByTicker(
         exchange: Exchange,
         ticker: string,
         startTime: Date,
@@ -41,7 +61,7 @@ export class CombinedHistoricalReadableStore implements HistoricalReadableStore 
     ) {
         for(const store of this.stores) {
             try {
-                return await store.getHistorical(
+                return await store.getHistoricalByTicker(
                     exchange,
                     ticker,
                     startTime,
@@ -61,13 +81,13 @@ export class CombinedHistoricalReadableStore implements HistoricalReadableStore 
 export class CombinedReadableStore implements ReadableStore {
     constructor(private stores: ReadableStore[]) {}
 
-    async get(
+    async getByTicker(
         exchange: Exchange,
         ticker: string,
     ) {
         for(const store of this.stores) {
             try {
-                return await store.get(exchange, ticker);
+                return await store.getByTicker(exchange, ticker);
             } catch(error) {
                 console.error(`store ${store} failed with exchange ${exchange} ticker ${ticker}: `, error);
                 console.log("trying next store...");

@@ -4,10 +4,11 @@ import {
 	CombinedHistoricalReadableFXStore,
 	CombinedHistoricalReadableStore,
 	CombinedReadableFXStore,
-	CombinedReadableStore
+	CombinedReadableStore, CombinedSearchStore
 } from "../stores/CombinedStore.js";
 import { registerSecuritiesRoutes } from "./securities.js";
 import { registerFxRoutes } from "./fx.js";
+import { registerSearchRoutes } from "./search.js";
 
 declare const ALPHA_VANTAGE_API_KEY: string;
 
@@ -38,7 +39,17 @@ registerFxRoutes(
 	router,
 	combinedReadableFxStore,
 	combinedHistoricalReadableFxStore,
+	caches.default,
 );
+
+const combinedSearchStore = new CombinedSearchStore([
+	yahooFinance,
+]);
+registerSearchRoutes(
+	router,
+	combinedSearchStore,
+	caches.default,
+)
 
 addEventListener("fetch", event => {
 	event.respondWith(router.handle(event.request, event));

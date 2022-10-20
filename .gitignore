@@ -4,3 +4,5 @@ index.md
 .DS_Store
 .idea/
 .vscode/
+.fleet/
+gen/

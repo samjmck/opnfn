@@ -1,0 +1,418 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: opnfn
+  license:
+    name: AGPLv3
+servers:
+  - url: http://opnfn.com/v1
+paths:
+  /search:
+    get:
+      summary: Find the exchanges and tickers of a certain security
+      parameters:
+        - name: query
+          in: query
+          required: true
+          examples:
+            Apple:
+              value: Apple
+              description: See which exchanges Apple is listed on and under which ticker symbols
+            AppleISIN:
+              value: US0378331005
+              description: Search for the exchange's and ticker symbols Apple is listed on by using their ISIN
+            Shell:
+              value: SHEL
+              description: Search for the exchanges Shell is listed on and under which ticker symbols
+          description: >
+            The name or some other identifier of the security you are searching.
+            For example, if you are trying to find the exchanges and ticker symbols of Apple Inc, you could simply use the search query "Apple". 
+            If you have Apple's ISIN, you could also search for that by using "US0378331005" as the search query.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of results that match with the search term
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+  /prices/exchange/{mic}/ticker/{ticker}/latest:
+    get:
+      summary: Fetch the latest prices for a given security on a given exchange
+      parameters:
+        - $ref: '#/components/parameters/mic'
+        - $ref: '#/components/parameters/ticker'
+      responses:
+        '202':
+          description: The latest market value of the security
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Money'
+        '500':
+          description: A server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /prices/exchange/{mic}/ticker/{ticker}/historical/start/{start}/end/{end}:
+    get:
+      summary: Fetch the historical prices for a given security on a given exchange between two dates with a one day interval between prices
+      parameters:
+        - $ref: '#/components/parameters/mic'
+        - $ref: '#/components/parameters/ticker'
+        - name: start
+          in: path
+          required: true
+          description: The start date in ISO 8601
+          examples:
+            date:
+              $ref: '#/components/examples/date'
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: path
+          required: true
+          examples:
+            date:
+              $ref: '#/components/examples/date'
+          description: The end date
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '202':
+          description: Historical prices of security in given interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalPrices'
+        '500':
+          description: A server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /fx/from/{fromCurrency}/to/{toCurrency}/latest:
+    get:
+      summary: Fetch the latest exchange rate for a currency pair
+      parameters:
+        - name: fromCurrency
+          in: path
+          description: >
+            The currency you are converting from
+          required: true
+          schema:
+            $ref: '#/components/schemas/Currency'
+        - name: toCurrency
+          in: path
+          description: >
+            The currency you are converting to
+          required: true
+          schema:
+            $ref: '#/components/schemas/Currency'
+      responses:
+        '202':
+          description: The latest exchange rate for the given currency pair
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRate'
+        '500':
+          $ref: '#/components/responses/serverError'
+  /fx/from/{fromCurrency}/to/{toCurrency}/historical/start/{start}/end/{end}:
+    get:
+      summary: Fetch the exchange rates between two dates with a one day interval between exchange rates
+      parameters:
+        - name: fromCurrency
+          in: path
+          description: >
+            The currency you are converting from
+          required: true
+          schema:
+            $ref: '#/components/schemas/Currency'
+        - name: toCurrency
+          in: path
+          description: >
+            The currency you are converting to
+          required: true
+          schema:
+            $ref: '#/components/schemas/Currency'
+        - name: start
+          in: path
+          required: true
+          description: The start date
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: path
+          required: true
+          description: The end date
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '202':
+          description: Historical prices of security in given interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalPrices'
+        '500':
+          description: A server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  examples:
+    date:
+      value: 2020-08-27T00:00:00.000Z
+      description: The 27th of October 2020 at midnight in UTC in ISO 8601
+  responses:
+    serverError:
+      description: A server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    mic:
+      name: mic
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/MIC'
+    ticker:
+      name: ticker
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Ticker'
+  schemas:
+    Ticker:
+      type: string
+      format: ticker
+      minLength: 1
+      maxLength: 7
+      description: >
+        A security's ticker symbol on a certain exchange.
+        Note that the ticker symbol of a security can vary depending on the exchange.
+        For example, Shell uses the ticker symbol `SHELL` on the [Euronext Amsterdam](https://live.euronext.com/nl/product/equities/gb00bp6mxd84-xams/shell-plc/shell)
+        while they have the symbol `SHEL` (with one L) on the [NYSE](https://www.nyse.com/quote/XNYS:SHEL).
+      example: AAPL
+    Currency:
+      type: string
+      enum: [USD, EUR, GBP, GBX, CAD, JPY, AUD, BRL, CZK, DKK, HKD]
+      format: ISO 4217 3-letter currency code
+      description: >
+        A currency code
+      example: USD
+    MIC:
+      type: string
+      format: ISO 10383 exchange MIC
+      minLength: 4
+      maxLength: 4
+      description: >
+        The Market Identifier Code (MIC) for the exchange where you would like to fetch the latest price from.
+        For example, the NYSE has the MIC `XNYS` while the London Stock Exchange has the MIC `XLON`. [See this page](https://www.iso20022.org/market-identifier-codes) for a list of exchanges with corresponding MICs.
+        Note that we use the MIC of the parent exchange. For example, the NYSE Arca uses the `XNYS` because it is part of the NYSE exchange group.
+      example: XNYS
+    ExchangeRateOHLCItem:
+      type: object
+      required:
+        - time
+        - open
+        - high
+        - low
+        - close
+      properties:
+        time:
+          type: string
+          format: date-time
+        open:
+          type: number
+          format: float
+        high:
+          type: number
+          format: float
+        low:
+          type: number
+          format: float
+        close:
+          type: number
+          format: float
+      example:
+        time: 2020-08-27T00:00:00.000Z
+        open: 1.0653
+        high: 1.0672
+        low: 1.0648
+        close: 1.0659
+    PricingOHLCItem:
+      type: object
+      required:
+        - time
+        - open
+        - high
+        - low
+        - close
+      properties:
+        time:
+          type: string
+          format: date-time
+        open:
+          type: number
+          format: float
+        high:
+          type: number
+          format: float
+        low:
+          type: number
+          format: float
+        close:
+          type: number
+          format: float
+      example:
+        time: 2020-08-27T00:00:00.000Z
+        open: 105.39
+        high: 111.73
+        low: 104.38
+        close: 109.51
+    SearchResults:
+      type: array
+      items:
+        type: object
+        required:
+          - name
+          - exchange
+          - ticker
+        properties:
+          name:
+            type: string
+          exchange:
+            type: string
+            format: mic
+            description: >
+              The MIC (ISO 10383) of the exchange's parent exchange.
+              For example, the NYSE has the MIC `XYNS` while the London Stock Exchange has the MIC `XLON`. [See this page](https://www.iso20022.org/market-identifier-codes) for a list of exchanges with corresponding MICs.
+              Note that we use the MIC of the parent exchange. For example, the NYSE Arca uses the `XNYS` because it is part of the NYSE exchange group.
+          ticker:
+            type: string
+        example:
+          name: Goldman Sachs
+          exchange: XNYS
+          ticker: GS
+      example:
+        - name: Apple Inc.
+          ticker: AAPL
+          exchange: XNAS
+        - name: Apple Inc.
+          ticker: APC
+          exchange: XETR
+    Money:
+      type: object
+      required:
+        - currency
+        - amount
+      properties:
+        currency:
+          $ref: '#/components/schemas/Currency'
+        amount:
+          type: number
+          format: float
+      example:
+        currency: USD
+        amount: 109.38
+    ExchangeRate:
+      type: object
+      required:
+        - exchangeRate
+      properties:
+        exchangeRate:
+          type: number
+          format: float
+      example:
+        exchangeRate: 1.0853
+    HistoricalPrices:
+      type: object
+      required:
+        - currency
+        - prices
+      properties:
+        currency:
+          type: string
+          format: currency
+          description: 3-letter currency code in ISO 4217
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingOHLCItem'
+      example:
+        currency: USD
+        prices:
+          - time: 2020-08-25T00:00:00.000Z
+            open: 105.39
+            high: 111.73
+            low: 104.38
+            close: 109.51
+          - time: 2020-08-26T00:00:00.000Z
+            open: 109.51
+            high: 110.04
+            low: 105.07
+            close: 103.22
+          - time: 2020-08-27T00:00:00.000Z
+            open: 103.22
+            high: 108.95
+            low: 102.48
+            close: 104.81
+    HistoricalExchangeRates:
+      type: object
+      required:
+        - exchangeRates
+      properties:
+        exchangeRates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExchangeRateOHLCItem'
+      example:
+        prices:
+          - time: 2022-10-03T00:00:00.000Z
+            open: 0.979269
+            high: 0.979269
+            low: 0.984426
+            close: 0.975362
+          - time: 2022-10-04T00:00:00.000Z
+            open: 0.983207
+            high: 0.983207
+            low: 0.998014
+            close: 0.980671
+          - time: 2022-10-05T00:00:00.000Z
+            open: 0.998432
+            high: 0.998432
+            low: 0.99942
+            close: 0.983545
+          - time: 2022-10-06T00:00:00.000Z
+            open: 0.9911
+            high: 0.9911
+            low: 0.992635
+            close: 0.978933
+          - time: 2022-10-07T00:00:00.000Z
+            open: 0.978905
+            high: 0.978905
+            low: 0.981605
+            close: 0.97317
+          - time: 2022-10-10T00:00:00.000Z
+            open: 0.973501
+            high: 0.973501
+            low: 0.975229
+            close: 0.968251
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
