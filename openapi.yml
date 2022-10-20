@@ -58,7 +58,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /prices/exchange/{mic}/ticker/{ticker}/historical/start/{start}/end/{end}:
+  /prices/exchange/{mic}/ticker/{ticker}/period/start/{start}/end/{end}:
     get:
       description: >
         Fetch the historical prices for a given security on a given exchange between two dates. 
@@ -78,7 +78,7 @@ paths:
         - name: end
           in: path
           required: true
-          description: The end date
+          description: The end date in ISO 8601
           example: 2020-09-04T00:00:00.000Z
           schema:
             type: string
@@ -148,7 +148,7 @@ paths:
         - name: start
           in: path
           required: true
-          description: The start date
+          description: The start date in ISO 8601
           schema:
             type: string
             format: date-time
@@ -156,7 +156,7 @@ paths:
         - name: end
           in: path
           required: true
-          description: The end date
+          description: The end date in ISO 8601
           schema:
             type: string
             format: date-time

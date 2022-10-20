@@ -59,8 +59,10 @@ export function registerSecuritiesRoutes(
         const { interval, adjustedForStockSplits: adjustedForStockSplitsString, useIntegers: useIntegersString } =
             <{ interval?: Interval, adjustedForStockSplits: string, useIntegers: string }> request.query;
         const useIntegers = useIntegersString === "true";
-        const startTime = new Date(startTimeString);
-        const endTime = new Date(endTimeString);
+        const startTime = new Date(decodeURIComponent(startTimeString));
+        const endTime = new Date(decodeURIComponent(endTimeString));
+
+        console.log(decodeURIComponent(startTimeString));
 
         try {
             const exchange = micToExchange(mic);

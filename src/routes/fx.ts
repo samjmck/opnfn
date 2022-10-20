@@ -31,7 +31,7 @@ export function registerFxRoutes(
         }
     });
 
-    router.get("/fx/from/:from/to/:to/historical/start/:startTime/end/:endTime", async(request, event) => {
+    router.get("/fx/from/:from/to/:to/period/start/:startTime/end/:endTime", async(request, event) => {
         const cacheKey = new Request((new URL(request.url)).toString(), request);
         let cachedResponse = await cache.match(cacheKey);
 
@@ -43,8 +43,8 @@ export function registerFxRoutes(
             <{ from: Currency, to: Currency, startTime: string, endTime: string }> request.params;
         const { interval } =
             <{ interval?: Interval }> request.query;
-        const startTime = new Date(startTimeString);
-        const endTime = new Date(endTimeString);
+        const startTime = new Date(decodeURIComponent(startTimeString));
+        const endTime = new Date(decodeURIComponent(endTimeString));
         try {
             const historicalPriceMap = await combinedHistoricalReadableFxStore.getHistoricalExchangeRate(
                 from,
