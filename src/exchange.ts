@@ -33,6 +33,7 @@ export enum Exchange {
     MutualFund,
     TorontoStockExchange,
     NEOExchange,
+    HongKongExchange,
 }
 
 export function exchangeToOperatingMic(exchange: Exchange): string {
@@ -101,6 +102,8 @@ export function exchangeToOperatingMic(exchange: Exchange): string {
             return "NEOE";
         case Exchange.KoreaExchange:
             return "XKRX";
+        case Exchange.HongKongExchange:
+            return "XHKF";
         default:
             throw new Error(`could not get MIC of "${exchange}"`);
     }
@@ -142,6 +145,8 @@ export function micToExchange(mic: string): Exchange {
             return Exchange.NasdaqHelsinki;
         case "XKRX":
             return Exchange.KoreaExchange;
+        case "XHKF":
+            return Exchange.HongKongExchange;
         default:
             throw new Error("could not find exchange");
     }

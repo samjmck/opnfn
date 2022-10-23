@@ -136,8 +136,11 @@ export class YahooFinance implements
 {
     async search(term: string) {
         const response = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${term}&newsCount=0&listsCount=0`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance search request failed for term "${term}"\n${await response.text()}`);
+        }
+
         const json = <YahooFinanceSearchResponse> (await response.json());
-        console.log(JSON.stringify(json, null, 4));
         const results: SearchResultItem[] = [];
         for(const quote of json.quotes) {
 
@@ -147,11 +150,15 @@ export class YahooFinance implements
                 ticker = ticker.split(".")[0];
             }
 
-            results.push({
-                name: quote.longname || quote.shortname,
-                ticker,
-                exchange: searchExchangeResultToExchange(quote.exchange),
-            });
+            try {
+                results.push({
+                    name: quote.longname || quote.shortname,
+                    ticker,
+                    exchange: searchExchangeResultToExchange(quote.exchange),
+                });
+            } catch(error) {
+                console.error(`Could not convert search exchange result "${quote.exchange}"`);
+            }
         }
         return results;
     }
@@ -164,7 +171,7 @@ export class YahooFinance implements
         let adjustedFrom = from;
         if(from === Currency.GBX) {
             adjustedFrom = Currency.GBP;
-            multiplier *= 100;
+            multiplier /= 100;
         }
         let adjustedTo = to;
         if(to === Currency.GBX) {
@@ -172,6 +179,9 @@ export class YahooFinance implements
             multiplier *= 100;
         }
         const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${adjustedFrom}${adjustedTo}=X`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance exchange rate request failed for ${from}${to}\n${await response.text()}`);
+        }
         const json = <YahooFinanceQueryResponse> (await response.json());
         return json.chart.result[0].meta.regularMarketPrice * multiplier;
     }
@@ -179,11 +189,26 @@ export class YahooFinance implements
     async getExchangeRateAtClose(
         from: Currency, to: Currency, time: Date
     ) {
+        let multiplier = 1;
+        let adjustedFrom = from;
+        if(from === Currency.GBX) {
+            adjustedFrom = Currency.GBP;
+            multiplier /= 100;
+        }
+        let adjustedTo = to;
+        if(to === Currency.GBX) {
+            adjustedTo = Currency.GBP;
+            multiplier *= 100;
+        }
+
         const secondsSinceEpoch = Math.floor(time.valueOf() / 1000);
         const dayAfterSecondsSinceEpoch = secondsSinceEpoch + 24 * 60 * 60;
         // Gives us space if the time is in a weekend or holiday period
         const startSecondsSinceEpoch = secondsSinceEpoch - 24 * 60 * 60 * 31;
-        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${from}${to}=X?period1=${startSecondsSinceEpoch}&period2=${dayAfterSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
+        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${adjustedFrom}${adjustedTo}=X?period1=${startSecondsSinceEpoch}&period2=${dayAfterSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance exchange rate at close request failed for ${from}${to} at ${time}\n${await response.text()}`);
+        }
         const csv = await response.text();
 
         const rows = csv.split("\n");
@@ -201,7 +226,7 @@ export class YahooFinance implements
         const exchangeRate = dataColumns[4];
         return {
             time: new Date(rows[rowIndex].split(",")[0]),
-            rate: Number(exchangeRate)
+            rate: Number(exchangeRate) * multiplier,
         };
     }
 
@@ -212,9 +237,24 @@ export class YahooFinance implements
         endTime: Date,
         interval: Interval,
     ) {
+        let multiplier = 1;
+        let adjustedFrom = from;
+        if(from === Currency.GBX) {
+            adjustedFrom = Currency.GBP;
+            multiplier /= 100;
+        }
+        let adjustedTo = to;
+        if(to === Currency.GBX) {
+            adjustedTo = Currency.GBP;
+            multiplier *= 100;
+        }
+
         const startSecondsSinceEpoch = Math.floor(startTime.valueOf() / 1000);
         const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000) + 24 * 60 * 60;
-        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${from}${to}=X?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
+        const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${adjustedFrom}${adjustedTo}=X?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance historical exchange rate request failed for ${from}${to}\n${await response.text()}`);
+        }
         const csv = await response.text();
 
         const rows = csv.split("\n");
@@ -233,10 +273,10 @@ export class YahooFinance implements
             if(time.valueOf() > endTime.valueOf()) {
                 break;
             }
-            const open = Number(columns[1]);
-            const high = Number(columns[1]);
-            const low = Number(columns[2]);
-            const close = Number(columns[3]);
+            const open = Number(columns[1]) * multiplier;
+            const high = Number(columns[1]) * multiplier;
+            const low = Number(columns[2]) * multiplier;
+            const close = Number(columns[3]) * multiplier;
             historicPriceMap.set(time, {
                 open,
                 high,
@@ -276,6 +316,9 @@ export class YahooFinance implements
         const startSecondsSinceEpoch = Math.floor(startTime.valueOf() / 1000);
         const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000) + 24 * 60 * 60;
         const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${startSecondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=history&includeAdjustedClose=true`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance historical prices request failed for ${ticker} ${exchange} ${startTime} ${endTime}\n${await response.text()}`);
+        }
         const csv = await response.text();
 
         const rows = csv.split("\n");
@@ -333,6 +376,9 @@ export class YahooFinance implements
         ticker: string,
     ) {
         const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${formatSymbol(exchange, ticker)}`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance get by ticker request failed ${exchange} ${ticker}\n${await response.text()}`);
+        }
         const json = <YahooFinanceQueryResponse> (await response.json());
         return {
             currency: stringToCurrency(json.chart.result[0].meta.currency),
@@ -350,6 +396,9 @@ export class YahooFinance implements
         const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000);
 
         const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/download/${formatSymbol(exchange, ticker)}?period1=${secondsSinceEpoch}&period2=${endSecondsSinceEpoch}&interval=1d&events=split&includeAdjustedClose=true`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance get stock splits request ${startTime} ${endTime} ${exchange} ${ticker}\n${await response.text()}`);
+        }
         const csv = await response.text();
 
         const splits: Split[] = [];
