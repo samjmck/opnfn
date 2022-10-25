@@ -5,7 +5,7 @@ info:
   license:
     name: AGPLv3
 servers:
-  - url: http://opnfn.com/v1
+  - url: https://opnfn.com/v1
 paths:
   /search:
     get:
