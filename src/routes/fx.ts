@@ -1,12 +1,17 @@
 import { Router } from "itty-router";
-import { CombinedHistoricalReadableFXStore, CombinedReadableFXStore } from "../stores/CombinedStore.js";
+import {
+    CachedCombinedHistoricalReadableFXStore,
+    CombinedHistoricalReadableFXStore,
+    CombinedReadableFXStore
+} from "../stores/CombinedStore.js";
 import { Interval } from "../store.js";
 import { Currency, OHLC } from "../money.js";
+import { micToExchange } from "../exchange.js";
 
 export function registerFxRoutes(
     router: Router,
     combinedReadableFxStore: CombinedReadableFXStore,
-    combinedHistoricalReadableFxStore: CombinedHistoricalReadableFXStore,
+    combinedHistoricalReadableFxStore: CachedCombinedHistoricalReadableFXStore,
     cache: Cache
 ) {
     router.get("/fx/from/:from/to/:to/latest", async request => {
@@ -67,6 +72,41 @@ export function registerFxRoutes(
                     headers: {
                         "Content-Type": "application/json",
                         "Cache-Control": "s-max-age=31536000",
+                    },
+                },
+            );
+            event.waitUntil(cache.put(cacheKey, response.clone()));
+            return response;
+        } catch(error) {
+            return new Response(JSON.stringify({ error }), { status: 500 });
+        }
+    });
+
+    router.get("/fx/from/:from/to/:to/close/time/:time", async(request, event) => {
+        const cacheKey = new Request((new URL(request.url)).toString(), request);
+        let cachedResponse = await cache.match(cacheKey);
+
+        if(cachedResponse) {
+            return cachedResponse;
+        }
+
+        const { from, to, time: timeString } = <{ from: Currency, to: Currency, time: string }> request.params;
+        const time = new Date(timeString);
+        try {
+            const { time: responseTime, rate } = await combinedHistoricalReadableFxStore.getExchangeRateAtClose(
+                from,
+                to,
+                time,
+            );
+            const response = new Response(
+                JSON.stringify({
+                    time: responseTime.toISOString(),
+                    rate,
+                }),
+                {
+                    status: 202,
+                    headers: {
+                        "Content-Type": "application/json",
                     },
                 },
             );

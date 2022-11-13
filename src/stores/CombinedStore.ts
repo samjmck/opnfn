@@ -7,6 +7,7 @@ import {
 } from "../store";
 import { Currency } from "../money.js";
 import { Exchange } from "../exchange.js";
+import { cached } from "../cache.js";
 
 async function retry<TStore, TRes>(max: number, stores: TStore[], call: (store: TStore) => Promise<TRes>): Promise<TRes> {
     for(let i = 0; i < max; i++) {
@@ -57,6 +58,16 @@ export class CombinedHistoricalReadableStore implements HistoricalReadableStore 
     }
 }
 
+export class CachedCombinedHistoricalReadableStore extends CombinedHistoricalReadableStore {
+    async getAtCloseByTicker(exchange: Exchange, ticker: string, time: Date, adjustedForSplits: boolean) {
+        return await cached(super.getAtCloseByTicker, [exchange, ticker, time, adjustedForSplits]);
+    }
+
+    async getHistoricalByTicker(exchange: Exchange, ticker: string, startTime: Date, endTime: Date, interval: Interval, adjustedForStockSplits: boolean) {
+        return await cached(super.getHistoricalByTicker, [exchange, ticker, startTime, endTime, interval, adjustedForStockSplits]);
+    }
+}
+
 export class CombinedReadableStore implements ReadableStore {
     constructor(private stores: ReadableStore[], private maxRetry = 3) {}
 
@@ -80,7 +91,10 @@ export class CombinedReadableFXStore implements ReadableFXStore {
 }
 
 export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXStore {
-    constructor(private stores: HistoricalReadableFXStore[]) {}
+    constructor(private stores: HistoricalReadableFXStore[]) {
+        console.log("constructor");
+        console.log(stores.length);
+    }
 
     getExchangeRateAtClose(
         from: Currency,
@@ -104,5 +118,21 @@ export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXSt
             endTime,
             interval,
         ));
+    }
+}
+
+export class CachedCombinedHistoricalReadableFXStore implements HistoricalReadableFXStore {
+    private store: CombinedHistoricalReadableFXStore;
+
+    constructor(stores: HistoricalReadableFXStore[]) {
+        this.store = new CombinedHistoricalReadableFXStore(stores);
+    }
+
+    async getExchangeRateAtClose(from: Currency, to: Currency, time: Date) {
+        return await cached(this.store.getExchangeRateAtClose, [from, to, time]);
+    }
+
+    async getHistoricalExchangeRate(from: Currency, to: Currency, startTime: Date, endTime: Date, interval: Interval) {
+        return await cached(this.store.getHistoricalExchangeRate, [from, to, startTime, endTime, interval]);
     }
 }

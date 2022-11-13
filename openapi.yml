@@ -63,7 +63,6 @@ paths:
       description: >
         Fetch the historical prices for a given security on a given exchange between two dates. 
         The results are including the start and end date and use an interval of 1 day.
-        The prices are the closing prices on a given day.
       parameters:
         - $ref: '#/components/parameters/mic'
         - $ref: '#/components/parameters/ticker'
@@ -90,6 +89,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HistoricalPrices'
+        '500':
+          description: A server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /prices/exchange/{mic}/ticker/{ticker}/close/time/{time}:
+    get:
+      description: >
+        Fetch the closing price for a given security on a given day.
+      parameters:
+        - $ref: '#/components/parameters/mic'
+        - $ref: '#/components/parameters/ticker'
+        - name: time
+          in: path
+          required: true
+          description: The closing day date in ISO 8601
+          example: 2020-08-27T00:00:00.000Z
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '202':
+          description: Closing price on a certain day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClosingPrice'
         '500':
           description: A server error
           content:
@@ -174,6 +201,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /fx/from/{fromCurrency}/to/{toCurrency}/close/time/{time}:
+    get:
+      description: >
+        Fetch the closing exchange rate on a given day.
+      parameters:
+        - name: fromCurrency
+          in: path
+          description: >
+            The currency you are converting from
+          required: true
+          schema:
+            $ref: '#/components/schemas/Currency'
+        - name: toCurrency
+          in: path
+          description: >
+            The currency you are converting to
+          required: true
+          schema:
+            $ref: '#/components/schemas/Currency'
+        - name: time
+          in: path
+          required: true
+          description: The date in ISO 8601
+          schema:
+            type: string
+            format: date-time
+          example: 2020-08-27T00:00:00.000Z
+      responses:
+        '202':
+          description: Closing exchange rate on a certain day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClosingExchangeRate'
+        '500':
+          description: A server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   examples:
     date:
@@ -224,6 +291,10 @@ components:
         For example, the NYSE has the MIC `XNYS` while the London Stock Exchange has the MIC `XLON`. [See this page](https://www.iso20022.org/market-identifier-codes) for a list of exchanges with corresponding MICs.
         Note that we use the MIC of the parent exchange. For example, the NYSE Arca uses the `XNYS` because it is part of the NYSE exchange group.
       example: XNAS
+    Time:
+      type: string
+      format: Timestamp in ISO 8601
+      example: 2020-09-04T00:00:00.000Z
     ExchangeRateOHLCItem:
       type: object
       required:
@@ -235,7 +306,6 @@ components:
       properties:
         time:
           type: string
-          format: date-time
         open:
           type: number
           format: float
@@ -265,7 +335,6 @@ components:
       properties:
         time:
           type: string
-          format: date-time
         open:
           type: number
           format: float
@@ -296,14 +365,9 @@ components:
           name:
             type: string
           exchange:
-            type: string
-            format: mic
-            description: >
-              The MIC (ISO 10383) of the exchange's parent exchange.
-              For example, the NYSE has the MIC `XYNS` while the London Stock Exchange has the MIC `XLON`. [See this page](https://www.iso20022.org/market-identifier-codes) for a list of exchanges with corresponding MICs.
-              Note that we use the MIC of the parent exchange. For example, the NYSE Arca uses the `XNYS` because it is part of the NYSE exchange group.
+            $ref: '#/components/schemas/MIC'
           ticker:
-            type: string
+            $ref: '#/components/schemas/Ticker'
         example:
           name: Goldman Sachs
           exchange: XNYS
@@ -339,6 +403,29 @@ components:
           format: float
       example:
         exchangeRate: 1.0853
+    ClosingPrice:
+      type: object
+      required:
+        - time
+        - currency
+        - amount
+      properties:
+        time:
+          $ref: '#/components/schemas/Time'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        amount:
+          type: number
+    ClosingExchangeRate:
+      type: object
+      required:
+        - time
+        - rate
+      properties:
+        time:
+          $ref: '#/components/schemas/Time'
+        rate:
+          type: number
     HistoricalPrices:
       type: object
       required:
@@ -346,9 +433,7 @@ components:
         - prices
       properties:
         currency:
-          type: string
-          format: currency
-          description: 3-letter currency code in ISO 4217
+          $ref: '#/components/schemas/Currency'
         prices:
           type: array
           items:

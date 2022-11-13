@@ -59,10 +59,8 @@ export function registerSecuritiesRoutes(
         const { interval, adjustedForStockSplits: adjustedForStockSplitsString, useIntegers: useIntegersString } =
             <{ interval?: Interval, adjustedForStockSplits: string, useIntegers: string }> request.query;
         const useIntegers = useIntegersString === "true";
-        const startTime = new Date(decodeURIComponent(startTimeString));
-        const endTime = new Date(decodeURIComponent(endTimeString));
-
-        console.log(decodeURIComponent(startTimeString));
+        const startTime = new Date(startTimeString);
+        const endTime = new Date(endTimeString);
 
         try {
             const exchange = micToExchange(mic);
@@ -100,7 +98,6 @@ export function registerSecuritiesRoutes(
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
-                        "Cache-Control": "s-max-age=31536000",
                     },
                 },
             );
@@ -148,7 +145,6 @@ export function registerSecuritiesRoutes(
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
-                        "Cache-Control": "s-max-age=31536000",
                     },
                 },
             );

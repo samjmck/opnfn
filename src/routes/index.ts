@@ -1,16 +1,14 @@
 import { Router } from "itty-router";
 import { YahooFinance } from "../stores/YahooFinance.js";
 import {
-	CombinedHistoricalReadableFXStore,
-	CombinedHistoricalReadableStore,
+	CachedCombinedHistoricalReadableFXStore,
+	CachedCombinedHistoricalReadableStore,
 	CombinedReadableFXStore,
 	CombinedReadableStore, CombinedSearchStore
 } from "../stores/CombinedStore.js";
 import { registerSecuritiesRoutes } from "./securities.js";
 import { registerFxRoutes } from "./fx.js";
 import { registerSearchRoutes } from "./search.js";
-
-declare const ALPHA_VANTAGE_API_KEY: string;
 
 const yahooFinance = new YahooFinance();
 
@@ -19,7 +17,7 @@ const router = Router({ base: "/v1" });
 const combinedReadableStore = new CombinedReadableStore([
 	yahooFinance,
 ]);
-const combinedHistoricalReadableStore = new CombinedHistoricalReadableStore([
+const combinedHistoricalReadableStore = new CachedCombinedHistoricalReadableStore([
 	yahooFinance,
 ]);
 registerSecuritiesRoutes(
@@ -32,7 +30,7 @@ registerSecuritiesRoutes(
 const combinedReadableFxStore = new CombinedReadableFXStore([
 	yahooFinance,
 ]);
-const combinedHistoricalReadableFxStore = new CombinedHistoricalReadableFXStore([
+const combinedHistoricalReadableFxStore = new CachedCombinedHistoricalReadableFXStore([
 	yahooFinance,
 ]);
 registerFxRoutes(

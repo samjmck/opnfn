@@ -3,5 +3,10 @@ main = "src/routes/index.ts"
 compatibility_date = "2022-09-05"
 account_id = "c020ce55a7892125b33a01786c9a7016"
 
+[env.preview]
+kv_namespaces = [
+    { binding = "OPNFN_KV", id = "75f3ad6edc574756b7529f576174225b" }
+]
+
 [env.dev]
 vars = { ALPHA_VANTAGE_API_KEY = "hello" }
