@@ -59,8 +59,8 @@ export function registerSecuritiesRoutes(
         const { interval, adjustedForStockSplits: adjustedForStockSplitsString, useIntegers: useIntegersString } =
             <{ interval?: Interval, adjustedForStockSplits: string, useIntegers: string }> request.query;
         const useIntegers = useIntegersString === "true";
-        const startTime = new Date(startTimeString);
-        const endTime = new Date(endTimeString);
+        const startTime = new Date(decodeURIComponent(startTimeString));
+        const endTime = new Date(decodeURIComponent(endTimeString));
 
         try {
             const exchange = micToExchange(mic);
@@ -104,6 +104,7 @@ export function registerSecuritiesRoutes(
             event.waitUntil(cache.put(cacheKey, response.clone()));
             return response;
         } catch(error) {
+            console.log(error);
             return new Response(JSON.stringify({ error }), { status: 500 });
         }
     });
@@ -122,7 +123,7 @@ export function registerSecuritiesRoutes(
             <{ adjustedForSplits: string, useIntegers: string }> request.query;
         const useIntegers = useIntegersString === "true";
         const adjustedForStockSplits = adjustedForStockSplitsString === "true" || adjustedForStockSplitsString === undefined;
-        const time = new Date(timeString);
+        const time = new Date(decodeURIComponent(timeString));
 
         try {
             const exchange = micToExchange(mic);

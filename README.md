@@ -34,3 +34,7 @@ Response
 ```
 
 ### Fetch Apple's stock price on the NASDAQ between 
+
+curl --request GET \
+--url https://opnfn.com/v1/prices/exchange/XNAS/ticker/AAPL/period/start/2020-08-27/end/2020-09-04 \
+--header 'accept: application/json'

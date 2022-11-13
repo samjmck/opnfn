@@ -91,7 +91,7 @@ export function registerFxRoutes(
         }
 
         const { from, to, time: timeString } = <{ from: Currency, to: Currency, time: string }> request.params;
-        const time = new Date(timeString);
+        const time = new Date(decodeURIComponent(timeString));
         try {
             const { time: responseTime, rate } = await combinedHistoricalReadableFxStore.getExchangeRateAtClose(
                 from,
