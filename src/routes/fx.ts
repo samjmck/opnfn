@@ -4,14 +4,14 @@ import {
     CombinedHistoricalReadableFXStore,
     CombinedReadableFXStore
 } from "../stores/CombinedStore.js";
-import { Interval } from "../store.js";
+import { HistoricalReadableFXStore, Interval, ReadableFXStore } from "../store.js";
 import { Currency, OHLC } from "../money.js";
 import { micToExchange } from "../exchange.js";
 
 export function registerFxRoutes(
     router: Router,
-    combinedReadableFxStore: CombinedReadableFXStore,
-    combinedHistoricalReadableFxStore: CachedCombinedHistoricalReadableFXStore,
+    readableFxStore: ReadableFXStore,
+    historicalReadableFxStore: HistoricalReadableFXStore,
     cache: Cache
 ) {
     router.get("/fx/from/:from/to/:to/latest", async request => {
@@ -21,7 +21,7 @@ export function registerFxRoutes(
         }
         try {
             return new Response(
-                JSON.stringify({ exchangeRate: await combinedReadableFxStore.getExchangeRate(from, to) }),
+                JSON.stringify({ exchangeRate: await readableFxStore.getExchangeRate(from, to) }),
                 {
                     status: 202,
                 },
@@ -51,7 +51,7 @@ export function registerFxRoutes(
         const startTime = new Date(decodeURIComponent(startTimeString));
         const endTime = new Date(decodeURIComponent(endTimeString));
         try {
-            const historicalPriceMap = await combinedHistoricalReadableFxStore.getHistoricalExchangeRate(
+            const historicalPriceMap = await historicalReadableFxStore.getHistoricalExchangeRate(
                 from,
                 to,
                 startTime,
@@ -93,7 +93,7 @@ export function registerFxRoutes(
         const { from, to, time: timeString } = <{ from: Currency, to: Currency, time: string }> request.params;
         const time = new Date(decodeURIComponent(timeString));
         try {
-            const { time: responseTime, rate } = await combinedHistoricalReadableFxStore.getExchangeRateAtClose(
+            const { time: responseTime, rate } = await historicalReadableFxStore.getExchangeRateAtClose(
                 from,
                 to,
                 time,

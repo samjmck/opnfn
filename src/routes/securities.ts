@@ -1,13 +1,13 @@
 import { Router } from "itty-router";
 import { CombinedHistoricalReadableStore, CombinedReadableStore } from "../stores/CombinedStore.js";
-import { Interval} from "../store.js";
+import { HistoricalReadableStore, Interval, ReadableStore } from "../store.js";
 import { OHLC } from "../money.js";
 import { micToExchange } from "../exchange.js";
 
 export function registerSecuritiesRoutes(
     router: Router,
-    combinedReadableStore: CombinedReadableStore,
-    combinedHistoricalReadableStore: CombinedHistoricalReadableStore,
+    readableStore: ReadableStore,
+    historicalReadableStore: HistoricalReadableStore,
     cache: Cache,
 ) {
     router.get("/prices/exchange/:mic/ticker/:ticker/latest", async request => {
@@ -20,7 +20,7 @@ export function registerSecuritiesRoutes(
         }
         try {
             const exchange = micToExchange(mic);
-            const money = await combinedReadableStore.getByTicker(exchange, ticker);
+            const money = await readableStore.getByTicker(exchange, ticker);
             if(!useIntegers) {
                 money.amount /= 100;
             }
@@ -64,7 +64,7 @@ export function registerSecuritiesRoutes(
 
         try {
             const exchange = micToExchange(mic);
-            const { currency, map: historicalPricingMap } = await combinedHistoricalReadableStore.getHistoricalByTicker(
+            const { currency, map: historicalPricingMap } = await historicalReadableStore.getHistoricalByTicker(
                 exchange,
                 ticker,
                 startTime,
@@ -127,7 +127,7 @@ export function registerSecuritiesRoutes(
 
         try {
             const exchange = micToExchange(mic);
-            let { time: responseTime, currency, amount } = await combinedHistoricalReadableStore.getAtCloseByTicker(
+            let { time: responseTime, currency, amount } = await historicalReadableStore.getAtCloseByTicker(
                 exchange,
                 ticker,
                 time,

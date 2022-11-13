@@ -27,7 +27,7 @@ async function retry<TStore, TRes>(max: number, stores: TStore[], call: (store: 
 }
 
 export class CombinedSearchStore implements SearchStore {
-    constructor(private stores: SearchStore[]) {}
+    constructor(protected stores: SearchStore[]) {}
 
     search(term: string) {
         return retry(2, this.stores, store => store.search(term));
@@ -35,7 +35,7 @@ export class CombinedSearchStore implements SearchStore {
 }
 
 export class CombinedHistoricalReadableStore implements HistoricalReadableStore {
-    constructor(private stores: HistoricalReadableStore[]) {}
+    constructor(protected stores: HistoricalReadableStore[]) {}
 
     getAtCloseByTicker(
         exchange: Exchange,
@@ -59,6 +59,10 @@ export class CombinedHistoricalReadableStore implements HistoricalReadableStore 
 }
 
 export class CachedCombinedHistoricalReadableStore extends CombinedHistoricalReadableStore {
+    constructor(protected stores: HistoricalReadableStore[]) {
+        super(stores);
+    }
+
     async getAtCloseByTicker(exchange: Exchange, ticker: string, time: Date, adjustedForSplits: boolean) {
         return await cached(super.getAtCloseByTicker, [exchange, ticker, time, adjustedForSplits]);
     }
@@ -69,7 +73,7 @@ export class CachedCombinedHistoricalReadableStore extends CombinedHistoricalRea
 }
 
 export class CombinedReadableStore implements ReadableStore {
-    constructor(private stores: ReadableStore[], private maxRetry = 3) {}
+    constructor(protected stores: ReadableStore[], private maxRetry = 3) {}
 
     getByTicker(
         exchange: Exchange,
@@ -80,7 +84,7 @@ export class CombinedReadableStore implements ReadableStore {
 }
 
 export class CombinedReadableFXStore implements ReadableFXStore {
-    constructor(private stores: ReadableFXStore[]) {}
+    constructor(protected stores: ReadableFXStore[]) {}
 
     getExchangeRate(
         from: Currency,
@@ -90,11 +94,8 @@ export class CombinedReadableFXStore implements ReadableFXStore {
     }
 }
 
-export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXStore {
-    constructor(private stores: HistoricalReadableFXStore[]) {
-        console.log("constructor");
-        console.log(stores.length);
-    }
+export class CombinedHistoricalReadableFXStore {
+    constructor(protected stores: HistoricalReadableFXStore[]) {}
 
     getExchangeRateAtClose(
         from: Currency,

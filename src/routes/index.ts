@@ -2,7 +2,7 @@ import { Router } from "itty-router";
 import { YahooFinance } from "../stores/YahooFinance.js";
 import {
 	CachedCombinedHistoricalReadableFXStore,
-	CachedCombinedHistoricalReadableStore,
+	CachedCombinedHistoricalReadableStore, CombinedHistoricalReadableFXStore, CombinedHistoricalReadableStore,
 	CombinedReadableFXStore,
 	CombinedReadableStore, CombinedSearchStore
 } from "../stores/CombinedStore.js";
@@ -17,7 +17,7 @@ const router = Router({ base: "/v1" });
 const combinedReadableStore = new CombinedReadableStore([
 	yahooFinance,
 ]);
-const combinedHistoricalReadableStore = new CachedCombinedHistoricalReadableStore([
+const combinedHistoricalReadableStore = new CombinedHistoricalReadableStore([
 	yahooFinance,
 ]);
 registerSecuritiesRoutes(
@@ -30,7 +30,7 @@ registerSecuritiesRoutes(
 const combinedReadableFxStore = new CombinedReadableFXStore([
 	yahooFinance,
 ]);
-const combinedHistoricalReadableFxStore = new CachedCombinedHistoricalReadableFXStore([
+const combinedHistoricalReadableFxStore = new CombinedHistoricalReadableFXStore([
 	yahooFinance,
 ]);
 registerFxRoutes(
@@ -47,7 +47,7 @@ registerSearchRoutes(
 	router,
 	combinedSearchStore,
 	caches.default,
-)
+);
 
 addEventListener("fetch", event => {
 	event.respondWith(router.handle(event.request, event));
