@@ -294,15 +294,16 @@ export class YahooFinance implements
         time: Date,
         adjustedForSplits: boolean,
     ) {
-        // + 14 days
-        const endTime = new Date(time.valueOf() + 14 * 24 * 60 * 60 * 1000);
-        const historical = await this.getHistoricalByTicker(exchange, ticker, time, endTime, Interval.Day, adjustedForSplits);
-        const [firstTime, ohlc] = <[Date, OHLC]> historical.map.entries().next().value;
+        const startTime = new Date(time.valueOf() - 14 * 24 * 60 * 60 * 1000);
+        const historical = await this.getHistoricalByTicker(exchange, ticker, startTime, time, Interval.Day, adjustedForSplits);
+        const items = [...historical.map.entries()];
+        const lastItem = items[items.length - 1];
+
         return {
-            time: firstTime,
             currency: historical.currency,
-            amount: ohlc.close,
-        };
+            amount: lastItem[1].close,
+            time: lastItem[0],
+        }
     }
 
     async getHistoricalByTicker(

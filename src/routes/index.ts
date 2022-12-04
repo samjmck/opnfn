@@ -1,14 +1,18 @@
 import { Router } from "itty-router";
 import { YahooFinance } from "../stores/YahooFinance.js";
 import {
-	CachedCombinedHistoricalReadableFXStore,
-	CachedCombinedHistoricalReadableStore, CombinedHistoricalReadableFXStore, CombinedHistoricalReadableStore,
+	CombinedHistoricalReadableFXStore, CombinedHistoricalReadableStore,
 	CombinedReadableFXStore,
 	CombinedReadableStore, CombinedSearchStore
 } from "../stores/CombinedStore.js";
 import { registerSecuritiesRoutes } from "./securities.js";
 import { registerFxRoutes } from "./fx.js";
 import { registerSearchRoutes } from "./search.js";
+import { KVCache } from "../cache.js";
+
+declare const OPNFN_KV: KVNamespace;
+
+const cache = new KVCache(OPNFN_KV);
 
 const yahooFinance = new YahooFinance();
 
@@ -24,7 +28,7 @@ registerSecuritiesRoutes(
 	router,
 	combinedReadableStore,
 	combinedHistoricalReadableStore,
-	caches.default,
+	cache,
 );
 
 const combinedReadableFxStore = new CombinedReadableFXStore([
@@ -37,7 +41,7 @@ registerFxRoutes(
 	router,
 	combinedReadableFxStore,
 	combinedHistoricalReadableFxStore,
-	caches.default,
+	cache,
 );
 
 const combinedSearchStore = new CombinedSearchStore([
@@ -46,7 +50,7 @@ const combinedSearchStore = new CombinedSearchStore([
 registerSearchRoutes(
 	router,
 	combinedSearchStore,
-	caches.default,
+	cache,
 );
 
 addEventListener("fetch", event => {

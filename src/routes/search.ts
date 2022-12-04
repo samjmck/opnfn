@@ -1,44 +1,60 @@
 import { Router } from "itty-router";
-import {
-    CombinedSearchStore
-} from "../stores/CombinedStore.js";
-import { exchangeToOperatingMic } from "../exchange.js";
+import { exchangeToOperatingMic } from "../exchange";
+import { SearchStore } from "../store";
+import { Cache } from "../cache.js";
 
 export function registerSearchRoutes(
     router: Router,
-    combinedSearchStore: CombinedSearchStore,
+    searchStore: SearchStore,
     cache: Cache,
 ) {
     router.get("/search", async(request, event) => {
-        const cacheKey = new Request((new URL(request.url)).toString(), request);
-        let cachedResponse = await cache.match(cacheKey);
-
-        if(cachedResponse) {
-            return cachedResponse;
-        }
-
         const { query } = <{ query: string }> request.query;
 
+        const cacheKey = `/search?query=${query}`;
+        const cachedResponse = await cache.get<string>(cacheKey);
+        if(cachedResponse) {
+            return new Response(
+                cachedResponse,
+                {
+                    status: 200,
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+        }
+
         try {
-            const results = await combinedSearchStore.search(query);
-            const resultsExchangeToMic = [];
-            for(const result of results) {
-                resultsExchangeToMic.push({
-                    ...result,
-                    exchange: exchangeToOperatingMic(result.exchange),
+            const searchResults = await searchStore.search(query);
+
+            // Same results only with the exchange field being the exchange MIC
+            const resultsWithMics = [];
+            for(const searchResult of searchResults) {
+                resultsWithMics.push({
+                    ...searchResult,
+                    exchange: exchangeToOperatingMic(searchResult.exchange),
                 });
             }
+
+            const jsonResults = JSON.stringify(resultsWithMics);
             const response = new Response(
-                JSON.stringify(resultsExchangeToMic),
+                jsonResults,
                 {
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
-                        "Cache-Control": "s-max-age=86400",
+                        "Cache-Control": "public, max-age=86400",
                     },
                 },
             );
-            event.waitUntil(cache.put(cacheKey, response.clone()));
+
+            // If the result is not empty, cache the response
+            if(searchResults.length > 0) {
+                // Cache time of 1 day because sometimes securities can be delisted or renamed
+                event.waitUntil(cache.put(cacheKey, jsonResults, 86400));
+            }
+
             return response;
         } catch(error) {
             return new Response(JSON.stringify({ error }), { status: 500 });

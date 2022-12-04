@@ -1,12 +1,7 @@
 import { Router } from "itty-router";
-import {
-    CachedCombinedHistoricalReadableFXStore,
-    CombinedHistoricalReadableFXStore,
-    CombinedReadableFXStore
-} from "../stores/CombinedStore.js";
 import { HistoricalReadableFXStore, Interval, ReadableFXStore } from "../store.js";
 import { Currency, OHLC } from "../money.js";
-import { micToExchange } from "../exchange.js";
+import { Cache } from "../cache.js";
 
 export function registerFxRoutes(
     router: Router,
@@ -37,17 +32,26 @@ export function registerFxRoutes(
     });
 
     router.get("/fx/from/:from/to/:to/period/start/:startTime/end/:endTime", async(request, event) => {
-        const cacheKey = new Request((new URL(request.url)).toString(), request);
-        let cachedResponse = await cache.match(cacheKey);
-
-        if(cachedResponse) {
-            return cachedResponse;
-        }
-
         const { from, to, startTime: startTimeString, endTime: endTimeString } =
             <{ from: Currency, to: Currency, startTime: string, endTime: string }> request.params;
         const { interval } =
             <{ interval?: Interval }> request.query;
+
+        const cacheKey = `/fx/from/${from}/to/${to}/period/start/${startTimeString}/end/${endTimeString}?interval=${interval}`;
+        const cachedResponse = await cache.get<string>(cacheKey);
+        if(cachedResponse) {
+            return new Response(
+                cachedResponse,
+                {
+                    status: 202,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Cache-Control": "public, max-age=31536000", // 1 year cache
+                    },
+                },
+            );
+        }
+
         const startTime = new Date(decodeURIComponent(startTimeString));
         const endTime = new Date(decodeURIComponent(endTimeString));
         try {
@@ -65,17 +69,18 @@ export function registerFxRoutes(
                     ...ohlc,
                 });
             }
+            const jsonResponse = JSON.stringify({ exchangeRates });
             const response = new Response(
-                JSON.stringify({ exchangeRates }),
+                jsonResponse,
                 {
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
-                        "Cache-Control": "s-max-age=31536000",
+                        "Cache-Control": "public, max-age=31536000", // 1 year cache
                     },
                 },
             );
-            event.waitUntil(cache.put(cacheKey, response.clone()));
+            event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
         } catch(error) {
             return new Response(JSON.stringify({ error }), { status: 500 });
@@ -83,34 +88,42 @@ export function registerFxRoutes(
     });
 
     router.get("/fx/from/:from/to/:to/close/time/:time", async(request, event) => {
-        const cacheKey = new Request((new URL(request.url)).toString(), request);
-        let cachedResponse = await cache.match(cacheKey);
-
-        if(cachedResponse) {
-            return cachedResponse;
-        }
-
         const { from, to, time: timeString } = <{ from: Currency, to: Currency, time: string }> request.params;
         const time = new Date(decodeURIComponent(timeString));
-        try {
-            const { time: responseTime, rate } = await historicalReadableFxStore.getExchangeRateAtClose(
-                from,
-                to,
-                time,
-            );
-            const response = new Response(
-                JSON.stringify({
-                    time: responseTime.toISOString(),
-                    rate,
-                }),
+
+        const cacheKey = `/fx/from/${from}/to/${to}/close/time/${timeString}`;
+        const cachedResponse = await cache.get<string>(cacheKey);
+        if(cachedResponse) {
+            return new Response(
+                cachedResponse,
                 {
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
+                        "Cache-Control": "public, max-age=31536000", // 1 year cache
                     },
                 },
             );
-            event.waitUntil(cache.put(cacheKey, response.clone()));
+        }
+
+        try {
+            const { time: closingTime, rate } = await historicalReadableFxStore.getExchangeRateAtClose(
+                from,
+                to,
+                time,
+            );
+            const jsonResponse = JSON.stringify({ time: closingTime.toISOString(), rate });
+            const response = new Response(
+                jsonResponse,
+                {
+                    status: 202,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Cache-Control": "public, max-age=31536000", // 1 year cache
+                    },
+                },
+            );
+            event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
         } catch(error) {
             return new Response(JSON.stringify({ error }), { status: 500 });

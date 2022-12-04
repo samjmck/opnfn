@@ -3,6 +3,7 @@ import { CombinedHistoricalReadableStore, CombinedReadableStore } from "../store
 import { HistoricalReadableStore, Interval, ReadableStore } from "../store.js";
 import { OHLC } from "../money.js";
 import { micToExchange } from "../exchange.js";
+import { Cache } from "../cache.js";
 
 export function registerSecuritiesRoutes(
     router: Router,
@@ -15,9 +16,11 @@ export function registerSecuritiesRoutes(
         const { useIntegers: useIntegersString } =
             <{ useIntegers: string }> request.query;
         const useIntegers = useIntegersString === "true";
+
         if(mic === undefined || ticker === undefined) {
             return new Response(null, { status: 422 });
         }
+
         try {
             const exchange = micToExchange(mic);
             const money = await readableStore.getByTicker(exchange, ticker);
@@ -47,13 +50,6 @@ export function registerSecuritiesRoutes(
     });
 
     router.get("/prices/exchange/:mic/ticker/:ticker/period/start/:startTime/end/:endTime", async(request, event) => {
-        const cacheKey = new Request((new URL(request.url)).toString(), request);
-        let cachedResponse = await cache.match(cacheKey);
-
-        if(cachedResponse) {
-            return cachedResponse;
-        }
-
         const { mic, ticker, startTime: startTimeString, endTime: endTimeString } =
             <{ mic: string, ticker: string, startTime: string, endTime: string }> request.params;
         const { interval, adjustedForStockSplits: adjustedForStockSplitsString, useIntegers: useIntegersString } =
@@ -61,6 +57,22 @@ export function registerSecuritiesRoutes(
         const useIntegers = useIntegersString === "true";
         const startTime = new Date(decodeURIComponent(startTimeString));
         const endTime = new Date(decodeURIComponent(endTimeString));
+
+        const cacheKey = `/prices/exchange/${mic}/ticker/${ticker}/period/start/${startTimeString}/end/${endTimeString}?interval=${interval}&adjustedForStockSplits=${adjustedForStockSplitsString}&useIntegers=${useIntegersString}`;
+        const cachedResponse = await cache.get<string>(cacheKey);
+        if(cachedResponse) {
+            // Browser is not allowed to cache this response as the useIntegers query parameter is not part of the cache key
+            // but useIntegers does change the response body
+            return new Response(
+                cachedResponse,
+                {
+                    status: 202,
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+        }
 
         try {
             const exchange = micToExchange(mic);
@@ -89,11 +101,12 @@ export function registerSecuritiesRoutes(
                     });
                 }
             }
+
+            const jsonResponse = JSON.stringify({ currency, prices });
+            // Browser is not allowed to cache this response as the useIntegers query parameter is not part of the cache key
+            // but useIntegers does change the response body
             const response = new Response(
-                JSON.stringify({
-                    currency,
-                    prices,
-                }),
+                jsonResponse,
                 {
                     status: 202,
                     headers: {
@@ -101,7 +114,7 @@ export function registerSecuritiesRoutes(
                     },
                 },
             );
-            event.waitUntil(cache.put(cacheKey, response.clone()));
+            event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
         } catch(error) {
             console.log(error);
@@ -110,13 +123,6 @@ export function registerSecuritiesRoutes(
     });
 
     router.get("/prices/exchange/:mic/ticker/:ticker/close/time/:time", async(request, event) => {
-        const cacheKey = new Request((new URL(request.url)).toString(), request);
-        let cachedResponse = await cache.match(cacheKey);
-
-        if(cachedResponse) {
-            return cachedResponse;
-        }
-
         const { mic, ticker, time: timeString } =
             <{ mic: string, ticker: string, time: string }> request.params;
         const { adjustedForSplits: adjustedForStockSplitsString, useIntegers: useIntegersString } =
@@ -124,6 +130,22 @@ export function registerSecuritiesRoutes(
         const useIntegers = useIntegersString === "true";
         const adjustedForStockSplits = adjustedForStockSplitsString === "true" || adjustedForStockSplitsString === undefined;
         const time = new Date(decodeURIComponent(timeString));
+
+        const cacheKey = `/prices/exchange/${mic}/ticker/${ticker}/close/time/${timeString}?adjustedForSplits=${adjustedForStockSplitsString}&useIntegers=${useIntegersString}`;
+        const cachedResponse = await cache.get<string>(cacheKey);
+        if(cachedResponse) {
+            // Browser is not allowed to cache this response as the useIntegers query parameter is not part of the cache key
+            // but useIntegers does change the response body
+            return new Response(
+                cachedResponse,
+                {
+                    status: 202,
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+        }
 
         try {
             const exchange = micToExchange(mic);
@@ -136,12 +158,9 @@ export function registerSecuritiesRoutes(
             if(!useIntegers) {
                 amount /= 100;
             }
+            const jsonResponse = JSON.stringify({ time: responseTime.toISOString(), currency, amount });
             const response = new Response(
-                JSON.stringify({
-                    time: responseTime.toISOString(),
-                    currency,
-                    amount,
-                }),
+                jsonResponse,
                 {
                     status: 202,
                     headers: {
@@ -149,7 +168,7 @@ export function registerSecuritiesRoutes(
                     },
                 },
             );
-            event.waitUntil(cache.put(cacheKey, response.clone()));
+            event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
         } catch(error) {
             return new Response(JSON.stringify({ error }), { status: 500 });

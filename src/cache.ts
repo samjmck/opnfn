@@ -1,22 +1,23 @@
 import superjson from "superjson";
 
-declare const OPNFN_KV: KVNamespace;
+export interface Cache {
+    get<T>(key: string): Promise<T | null>;
+    put(key: string, value: unknown, expirationSeconds?: number): Promise<void>;
+}
 
-export async function cached<T, TParams extends any[]>(
-    func: (...params: TParams) => T,
-    params: TParams,
-    key?: string,
-    expirationSeconds?: number,
-): Promise<T> {
-    if(key === undefined) {
-        key = `${func.name}:${superjson.stringify(params)}`;
+export class KVCache implements Cache {
+    constructor(private kv: KVNamespace) {}
+
+    async get<T extends unknown>(key: string): Promise<T | null> {
+        const cachedResult = await this.kv.get(key);
+        if(cachedResult !== null) {
+            return superjson.parse<T>(cachedResult);
+        } else {
+            return null;
+        }
     }
-    const cachedResult = await OPNFN_KV.get(key);
-    if(cachedResult !== null) {
-        return superjson.parse<T>(cachedResult);
-    } else {
-        const result = await Promise.resolve(func(...params));
-        await OPNFN_KV.put(key, superjson.stringify(result), { expirationTtl: expirationSeconds });
-        return result;
+
+    async put(key: string, value: unknown, expirationSeconds?: number): Promise<void> {
+        await this.kv.put(key, superjson.stringify(value), { expirationTtl: expirationSeconds });
     }
 }
