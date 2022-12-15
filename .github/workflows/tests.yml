@@ -1,8 +1,5 @@
-name: tests
+name: Run tests daily
 on:
-  push:
-    branches:
-      - master
   pull_request:
     branches:
       - master
