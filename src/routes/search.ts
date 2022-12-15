@@ -1,7 +1,7 @@
 import { Router } from "itty-router";
 import { exchangeToOperatingMic } from "../exchange";
 import { SearchStore } from "../store";
-import { Cache } from "../cache.js";
+import { Cache } from "../cache";
 
 export function registerSearchRoutes(
     router: Router,

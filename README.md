@@ -98,3 +98,11 @@ Response
   ]
 }
 ```
+
+### Why Vitest?
+
+Initially, I was planning on using Jest for the unit tests. However, Jest required a fair amount of configuration to get it to work with TypeScript. More specifically, it requires Babel to get this to work. I am trying to keep this project as bloat-free and minimal as possible which is why I ultimately decided against using Jest. 
+
+Another interesting route I experimented with was writing the tests with for Deno. The codebase doesn't use any npm libraries or Node-specific code so in theory, it should run in Deno. Deno's testing library doesn't require any special configuration meaning it was a potential fit for this project. However, Deno code requires explicitly naming file conventions in `import` statements. Doing this broke `tsc` which in turn broke `wrangler`. On top of that, using Deno and Node in the same project is a bit clunky. 
+
+

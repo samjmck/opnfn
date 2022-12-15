@@ -1,14 +1,14 @@
 import { Router } from "itty-router";
-import { YahooFinance } from "../stores/YahooFinance.js";
+import { YahooFinance } from "../stores/YahooFinance";
 import {
 	CombinedHistoricalReadableFXStore, CombinedHistoricalReadableStore,
 	CombinedReadableFXStore,
 	CombinedReadableStore, CombinedSearchStore
-} from "../stores/CombinedStore.js";
-import { registerSecuritiesRoutes } from "./securities.js";
-import { registerFxRoutes } from "./fx.js";
-import { registerSearchRoutes } from "./search.js";
-import { KVCache } from "../cache.js";
+} from "../stores/CombinedStore";
+import { registerSecuritiesRoutes } from "./securities";
+import { registerFxRoutes } from "./fx";
+import { registerSearchRoutes } from "./search";
+import { KVCache } from "../cache";
 
 declare const OPNFN_KV: KVNamespace;
 

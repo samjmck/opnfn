@@ -1,6 +1,6 @@
 import { ReadableStore } from "../store";
 import { moneyAmountStringToInteger, stringToCurrency } from "../money";
-import { Exchange } from "../exchange.js";
+import { Exchange } from "../exchange";
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {

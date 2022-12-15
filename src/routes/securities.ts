@@ -1,9 +1,8 @@
 import { Router } from "itty-router";
-import { CombinedHistoricalReadableStore, CombinedReadableStore } from "../stores/CombinedStore.js";
-import { HistoricalReadableStore, Interval, ReadableStore } from "../store.js";
-import { OHLC } from "../money.js";
-import { micToExchange } from "../exchange.js";
-import { Cache } from "../cache.js";
+import { HistoricalReadableStore, Interval, ReadableStore } from "../store";
+import { OHLC } from "../money";
+import { micToExchange } from "../exchange";
+import { Cache } from "../cache";
 
 export function registerSecuritiesRoutes(
     router: Router,

@@ -5,8 +5,8 @@ import {
     ReadableFXStore,
     ReadableStore, SearchStore
 } from "../store";
-import { Currency } from "../money.js";
-import { Exchange } from "../exchange.js";
+import { Currency } from "../money";
+import { Exchange } from "../exchange";
 
 async function retry<TStore, TRes>(max: number, stores: TStore[], call: (store: TStore) => Promise<TRes>): Promise<TRes> {
     for(let i = 0; i < max; i++) {

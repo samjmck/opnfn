@@ -6,9 +6,9 @@ import {
     ReadableStore, SearchResultItem, SearchStore,
     Split,
     StockSplitStore
-} from "../store.js";
+} from "../store";
 import { Currency, moneyAmountStringToInteger, OHLC, stringToCurrency } from "../money";
-import { Exchange } from "../exchange.js";
+import { Exchange } from "../exchange";
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {
@@ -43,6 +43,12 @@ function getCompatibleExchangeSuffix(exchange: Exchange) {
             return "BE";
         case Exchange.KoreaExchange:
             return "KSC"
+        case Exchange.BorseStuttgart:
+            return "SG";
+        case Exchange.BolsaMexicana:
+            return "MX";
+        case Exchange.TokyoStockExchange:
+            return "T";
         default:
             return "";
     }
@@ -80,6 +86,16 @@ function searchExchangeResultToExchange(exchange: string): Exchange {
             return Exchange.BorseFrankfurt;
         case "KSC":
             return Exchange.KoreaExchange;
+        case "STU":
+            return Exchange.BorseStuttgart;
+        case "EBS":
+            return Exchange.SIXSwissExchange;
+        case "NGM":
+            return Exchange.Nasdaq;
+        case "PAR":
+            return Exchange.EuronextParis;
+        case "JPX":
+            return Exchange.TokyoStockExchange;
         default:
             throw new Error(`could not find exchange for Yahoo Finance search result exchange "${exchange}"`);
     }

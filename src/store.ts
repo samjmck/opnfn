@@ -1,5 +1,5 @@
 import { Currency, Money, OHLC } from "./money";
-import { Exchange } from "./exchange.js";
+import { Exchange } from "./exchange";
 
 export enum Interval {
     Day = "day",
