@@ -49,6 +49,8 @@ function getCompatibleExchangeSuffix(exchange: Exchange) {
             return "MX";
         case Exchange.TokyoStockExchange:
             return "T";
+        case Exchange.LondonStockExchangeIOB:
+            return "IL";
         default:
             return "";
     }
@@ -96,6 +98,8 @@ function searchExchangeResultToExchange(exchange: string): Exchange {
             return Exchange.EuronextParis;
         case "JPX":
             return Exchange.TokyoStockExchange;
+        case "IOB":
+            return Exchange.LondonStockExchangeIOB;
         default:
             throw new Error(`could not find exchange for Yahoo Finance search result exchange "${exchange}"`);
     }
@@ -242,7 +246,7 @@ export class YahooFinance implements
         const exchangeRate = dataColumns[4];
         return {
             time: new Date(rows[rowIndex].split(",")[0]),
-            rate: Number(exchangeRate) * multiplier,
+            exchangeRate: Number(exchangeRate) * multiplier,
         };
     }
 

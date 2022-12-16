@@ -1,8 +1,17 @@
 import { Router } from "itty-router";
 import { HistoricalReadableStore, Interval, ReadableStore } from "../store";
-import { OHLC } from "../money";
+import { Currency, Money, OHLC } from "../money";
 import { micToExchange } from "../exchange";
 import { Cache } from "../cache";
+
+export type PriceResponse = Money;
+
+export type PriceCloseResponse = { time: string } & Money;
+
+export type HistoricalPriceResponse = {
+    currency: Currency;
+    prices: ({ time: string } & OHLC)[];
+};
 
 export function registerSecuritiesRoutes(
     router: Router,
@@ -27,7 +36,7 @@ export function registerSecuritiesRoutes(
                 money.amount /= 100;
             }
             return new Response(
-                JSON.stringify(money),
+                JSON.stringify(<PriceResponse> money),
                 {
                     status: 202,
                     headers: {
@@ -51,13 +60,13 @@ export function registerSecuritiesRoutes(
     router.get("/prices/exchange/:mic/ticker/:ticker/period/start/:startTime/end/:endTime", async(request, event) => {
         const { mic, ticker, startTime: startTimeString, endTime: endTimeString } =
             <{ mic: string, ticker: string, startTime: string, endTime: string }> request.params;
-        const { interval, adjustedForStockSplits: adjustedForStockSplitsString, useIntegers: useIntegersString } =
-            <{ interval?: Interval, adjustedForStockSplits: string, useIntegers: string }> request.query;
+        const { interval, adjustedForSplits: adjustedForSplitsString, useIntegers: useIntegersString } =
+            <{ interval?: Interval, adjustedForSplits: string, useIntegers: string }> request.query;
         const useIntegers = useIntegersString === "true";
         const startTime = new Date(decodeURIComponent(startTimeString));
         const endTime = new Date(decodeURIComponent(endTimeString));
 
-        const cacheKey = `/prices/exchange/${mic}/ticker/${ticker}/period/start/${startTimeString}/end/${endTimeString}?interval=${interval}&adjustedForStockSplits=${adjustedForStockSplitsString}&useIntegers=${useIntegersString}`;
+        const cacheKey = `/prices/exchange/${mic}/ticker/${ticker}/period/start/${startTimeString}/end/${endTimeString}?interval=${interval}&adjustedForStockSplits=${adjustedForSplitsString}&useIntegers=${useIntegersString}`;
         const cachedResponse = await cache.get<string>(cacheKey);
         if(cachedResponse) {
             // Browser is not allowed to cache this response as the useIntegers query parameter is not part of the cache key
@@ -81,7 +90,7 @@ export function registerSecuritiesRoutes(
                 startTime,
                 endTime,
                 interval || Interval.Day,
-                adjustedForStockSplitsString === "true" || adjustedForStockSplitsString === undefined,
+                adjustedForSplitsString === "true" || adjustedForSplitsString === undefined,
             );
             const prices: ({ time: string } & OHLC)[] = [];
             for(const [time, ohlc] of historicalPricingMap) {
@@ -101,7 +110,7 @@ export function registerSecuritiesRoutes(
                 }
             }
 
-            const jsonResponse = JSON.stringify({ currency, prices });
+            const jsonResponse = JSON.stringify(<HistoricalPriceResponse> { currency, prices });
             // Browser is not allowed to cache this response as the useIntegers query parameter is not part of the cache key
             // but useIntegers does change the response body
             const response = new Response(
@@ -124,13 +133,13 @@ export function registerSecuritiesRoutes(
     router.get("/prices/exchange/:mic/ticker/:ticker/close/time/:time", async(request, event) => {
         const { mic, ticker, time: timeString } =
             <{ mic: string, ticker: string, time: string }> request.params;
-        const { adjustedForSplits: adjustedForStockSplitsString, useIntegers: useIntegersString } =
+        const { adjustedForSplits: adjustedForSplitsString, useIntegers: useIntegersString } =
             <{ adjustedForSplits: string, useIntegers: string }> request.query;
         const useIntegers = useIntegersString === "true";
-        const adjustedForStockSplits = adjustedForStockSplitsString === "true" || adjustedForStockSplitsString === undefined;
+        const adjustedForStockSplits = adjustedForSplitsString === "true" || adjustedForSplitsString === undefined;
         const time = new Date(decodeURIComponent(timeString));
 
-        const cacheKey = `/prices/exchange/${mic}/ticker/${ticker}/close/time/${timeString}?adjustedForSplits=${adjustedForStockSplitsString}&useIntegers=${useIntegersString}`;
+        const cacheKey = `/prices/exchange/${mic}/ticker/${ticker}/close/time/${timeString}?adjustedForSplits=${adjustedForSplitsString}&useIntegers=${useIntegersString}`;
         const cachedResponse = await cache.get<string>(cacheKey);
         if(cachedResponse) {
             // Browser is not allowed to cache this response as the useIntegers query parameter is not part of the cache key
@@ -157,7 +166,7 @@ export function registerSecuritiesRoutes(
             if(!useIntegers) {
                 amount /= 100;
             }
-            const jsonResponse = JSON.stringify({ time: responseTime.toISOString(), currency, amount });
+            const jsonResponse = JSON.stringify(<PriceCloseResponse> { time: responseTime.toISOString(), currency, amount });
             const response = new Response(
                 jsonResponse,
                 {

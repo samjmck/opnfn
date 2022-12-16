@@ -6,3 +6,4 @@ index.md
 .vscode/
 .fleet/
 gen/
+dist/

@@ -4,6 +4,12 @@ opnfn is an open-source REST API for stock exchange data. It attempts to use sta
 
 ## [REST API documentation](https://opnfn.com)
 
+## Performance
+
+The server is hosted by Cloudflare Worker which means heavy load shouldn't be an issue. However, if many requests are made in a short period of time for data that isn't cached, the API that is being used to fetch the data might block the requests. At the moment, there aren't enough users for this to be a problem.
+
+Caching is done by Cloudflare Workers KV, which is a key-value store. Data which should never change is cached forever, such as [historical prices](src/routes/securities.ts#L116) for securities or [historical exchange rates](src/routes/fx.ts#L83) in a specific time period. Data that might change is cached for a short period of time, such as the [search results](src/routes/search.ts#L55) for a specific query.
+
 ## Demo
 
 ### See which stock exchanges have listed Apple

@@ -424,7 +424,7 @@ components:
       properties:
         time:
           $ref: '#/components/schemas/Time'
-        rate:
+        exchangeRate:
           type: number
     HistoricalPrices:
       type: object

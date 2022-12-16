@@ -3,6 +3,19 @@ import { HistoricalReadableFXStore, Interval, ReadableFXStore } from "../store.j
 import { Currency, OHLC } from "../money.js";
 import { Cache } from "../cache.js";
 
+export type ExchangeRateResponse = {
+    exchangeRate: number;
+};
+
+export type ExchangeRateCloseResponse = {
+    exchangeRate: number;
+    time: string;
+}
+
+export type HistoricalExchangeRateResponse = {
+    exchangeRates: ({ time: string } & OHLC)[];
+};
+
 export function registerFxRoutes(
     router: Router,
     readableFxStore: ReadableFXStore,
@@ -16,7 +29,7 @@ export function registerFxRoutes(
         }
         try {
             return new Response(
-                JSON.stringify({ exchangeRate: await readableFxStore.getExchangeRate(from, to) }),
+                JSON.stringify(<ExchangeRateResponse> { exchangeRate: await readableFxStore.getExchangeRate(from, to) }),
                 {
                     status: 202,
                 },
@@ -69,7 +82,7 @@ export function registerFxRoutes(
                     ...ohlc,
                 });
             }
-            const jsonResponse = JSON.stringify({ exchangeRates });
+            const jsonResponse = JSON.stringify(<HistoricalExchangeRateResponse> { exchangeRates });
             const response = new Response(
                 jsonResponse,
                 {
@@ -107,12 +120,12 @@ export function registerFxRoutes(
         }
 
         try {
-            const { time: closingTime, rate } = await historicalReadableFxStore.getExchangeRateAtClose(
+            const { time: closingTime, exchangeRate } = await historicalReadableFxStore.getExchangeRateAtClose(
                 from,
                 to,
                 time,
             );
-            const jsonResponse = JSON.stringify({ time: closingTime.toISOString(), rate });
+            const jsonResponse = JSON.stringify(<ExchangeRateCloseResponse> { time: closingTime.toISOString(), exchangeRate });
             const response = new Response(
                 jsonResponse,
                 {

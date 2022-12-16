@@ -3,6 +3,12 @@ import { exchangeToOperatingMic } from "../exchange";
 import { SearchStore } from "../store";
 import { Cache } from "../cache";
 
+export type SearchResponse = {
+    name: string;
+    exchange: string;
+    ticker: string;
+}[];
+
 export function registerSearchRoutes(
     router: Router,
     searchStore: SearchStore,
@@ -29,7 +35,7 @@ export function registerSearchRoutes(
             const searchResults = await searchStore.search(query);
 
             // Same results only with the exchange field being the exchange MIC
-            const resultsWithMics = [];
+            const resultsWithMics: SearchResponse = [];
             for(const searchResult of searchResults) {
                 resultsWithMics.push({
                     ...searchResult,

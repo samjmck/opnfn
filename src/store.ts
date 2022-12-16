@@ -44,7 +44,7 @@ export interface ReadableFXStore {
 }
 
 export interface HistoricalReadableFXStore {
-    getExchangeRateAtClose(from: Currency, to: Currency, time: Date): Promise<{ time: Date, rate: number }>;
+    getExchangeRateAtClose(from: Currency, to: Currency, time: Date): Promise<{ time: Date, exchangeRate: number }>;
     getHistoricalExchangeRate(
         from: Currency,
         to: Currency,
