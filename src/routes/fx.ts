@@ -2,6 +2,7 @@ import { Router } from "itty-router";
 import { HistoricalReadableFXStore, Interval, ReadableFXStore } from "../store.js";
 import { Currency, OHLC } from "../money.js";
 import { Cache } from "../cache.js";
+import { corsHeaders } from "./cors.js";
 
 export type ExchangeRateResponse = {
     exchangeRate: number;
@@ -32,6 +33,9 @@ export function registerFxRoutes(
                 JSON.stringify(<ExchangeRateResponse> { exchangeRate: await readableFxStore.getExchangeRate(from, to) }),
                 {
                     status: 202,
+                    headers: {
+                        ...corsHeaders,
+                    }
                 },
             );
         } catch(error) {
@@ -39,6 +43,9 @@ export function registerFxRoutes(
                 JSON.stringify({ error }),
                 {
                     status: 500,
+                    headers: {
+                        ...corsHeaders,
+                    }
                 },
             );
         }
@@ -60,6 +67,7 @@ export function registerFxRoutes(
                     headers: {
                         "Content-Type": "application/json",
                         "Cache-Control": "public, max-age=31536000", // 1 year cache
+                        ...corsHeaders,
                     },
                 },
             );
@@ -90,13 +98,22 @@ export function registerFxRoutes(
                     headers: {
                         "Content-Type": "application/json",
                         "Cache-Control": "public, max-age=31536000", // 1 year cache
+                        ...corsHeaders,
                     },
                 },
             );
             event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
         } catch(error) {
-            return new Response(JSON.stringify({ error }), { status: 500 });
+            return new Response(
+                JSON.stringify({ error }),
+                {
+                    status: 500,
+                    headers: {
+                        ...corsHeaders,
+                    }
+                }
+            );
         }
     });
 
@@ -114,6 +131,7 @@ export function registerFxRoutes(
                     headers: {
                         "Content-Type": "application/json",
                         "Cache-Control": "public, max-age=31536000", // 1 year cache
+                        ...corsHeaders,
                     },
                 },
             );
@@ -133,13 +151,22 @@ export function registerFxRoutes(
                     headers: {
                         "Content-Type": "application/json",
                         "Cache-Control": "public, max-age=31536000", // 1 year cache
+                        ...corsHeaders,
                     },
                 },
             );
             event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
         } catch(error) {
-            return new Response(JSON.stringify({ error }), { status: 500 });
+            return new Response(
+                JSON.stringify({ error }),
+                {
+                    status: 500,
+                    headers: {
+                        ...corsHeaders,
+                    }
+                }
+            );
         }
     });
 }

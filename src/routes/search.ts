@@ -2,6 +2,7 @@ import { Router } from "itty-router";
 import { exchangeToOperatingMic } from "../exchange";
 import { SearchStore } from "../store";
 import { Cache } from "../cache";
+import { corsHeaders } from "./cors.js";
 
 export type SearchResponse = {
     name: string;
@@ -26,6 +27,7 @@ export function registerSearchRoutes(
                     status: 200,
                     headers: {
                         "Content-Type": "application/json",
+                        ...corsHeaders,
                     },
                 },
             );
@@ -51,6 +53,7 @@ export function registerSearchRoutes(
                     headers: {
                         "Content-Type": "application/json",
                         "Cache-Control": "public, max-age=86400",
+                        ...corsHeaders,
                     },
                 },
             );
@@ -63,7 +66,13 @@ export function registerSearchRoutes(
 
             return response;
         } catch(error) {
-            return new Response(JSON.stringify({ error }), { status: 500 });
+            return new Response(
+                JSON.stringify({ error }),
+                {
+                    status: 500,
+                    ...corsHeaders,
+                }
+            );
         }
     })
 }

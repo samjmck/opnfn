@@ -3,6 +3,7 @@ import { HistoricalReadableStore, Interval, ReadableStore } from "../store";
 import { Currency, Money, OHLC } from "../money";
 import { micToExchange } from "../exchange";
 import { Cache } from "../cache";
+import { corsHeaders } from "./cors.js";
 
 export type PriceResponse = Money;
 
@@ -41,6 +42,7 @@ export function registerSecuritiesRoutes(
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
+                        ...corsHeaders,
                     },
                 },
             );
@@ -51,6 +53,7 @@ export function registerSecuritiesRoutes(
                     status: 500,
                     headers: {
                         "Content-Type": "application/json",
+                        ...corsHeaders,
                     },
                 },
             );
@@ -77,6 +80,7 @@ export function registerSecuritiesRoutes(
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
+                        ...corsHeaders,
                     },
                 },
             );
@@ -119,6 +123,7 @@ export function registerSecuritiesRoutes(
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
+                        ...corsHeaders,
                     },
                 },
             );
@@ -126,7 +131,15 @@ export function registerSecuritiesRoutes(
             return response;
         } catch(error) {
             console.log(error);
-            return new Response(JSON.stringify({ error }), { status: 500 });
+            return new Response(
+                JSON.stringify({ error }),
+                {
+                    status: 500,
+                    headers: {
+                        ...corsHeaders,
+                    }
+                }
+            );
         }
     });
 
@@ -150,6 +163,7 @@ export function registerSecuritiesRoutes(
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
+                        ...corsHeaders,
                     },
                 },
             );
@@ -173,13 +187,20 @@ export function registerSecuritiesRoutes(
                     status: 202,
                     headers: {
                         "Content-Type": "application/json",
+                        ...corsHeaders,
                     },
                 },
             );
             event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
         } catch(error) {
-            return new Response(JSON.stringify({ error }), { status: 500 });
+            return new Response(
+                JSON.stringify({ error }),
+                {
+                    status: 500,
+                    ...corsHeaders,
+                }
+            );
         }
     });
 }

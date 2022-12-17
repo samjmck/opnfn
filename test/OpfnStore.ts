@@ -20,7 +20,7 @@ export class OpnfnStore implements
     HistoricalReadableStore,
     HistoricalReadableFXStore
 {
-    constructor(private baseUrl = "https://opnfn.com/api/v1") {}
+    constructor(private baseUrl = "https://opnfn.com/v1") {}
 
     async search(query: string) {
         const response = await fetch(`${this.baseUrl}/search?query=${query}`);
