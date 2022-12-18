@@ -72,8 +72,6 @@ export function registerSecuritiesRoutes(
         const cacheKey = `/prices/exchange/${mic}/ticker/${ticker}/period/start/${startTimeString}/end/${endTimeString}?interval=${interval}&adjustedForStockSplits=${adjustedForSplitsString}&useIntegers=${useIntegersString}`;
         const cachedResponse = await cache.get<string>(cacheKey);
         if(cachedResponse) {
-            // Browser is not allowed to cache this response as the useIntegers query parameter is not part of the cache key
-            // but useIntegers does change the response body
             return new Response(
                 cachedResponse,
                 {

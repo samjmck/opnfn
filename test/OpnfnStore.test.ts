@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-import { YahooFinance } from "../src/stores/YahooFinance";
 import { Interval, SearchResultItem } from "../src/store";
 import { Exchange } from "../src/exchange";
 import { Currency } from "../src/money";

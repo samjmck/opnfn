@@ -163,11 +163,15 @@ export class YahooFinance implements
         const json = <YahooFinanceSearchResponse> (await response.json());
         const results: SearchResultItem[] = [];
         for(const quote of json.quotes) {
-
             // e.g. AAPL.MX -> AAPL
             let ticker = quote.symbol;
             if(ticker.indexOf(".") > -1) {
                 ticker = ticker.split(".")[0];
+            }
+
+            if(ticker.length > 10) {
+                // Yahoo Finance returns some incorrect ticker name
+                continue;
             }
 
             try {
