@@ -8,7 +8,7 @@ opnfn is an open-source REST API for stock exchange data. It attempts to use sta
 
 The server is hosted by Cloudflare Worker which means heavy load shouldn't be an issue. However, if many requests are made in a short period of time for data that isn't cached, the API that is being used to fetch the data might block the requests. At the moment, there aren't enough users for this to be a problem.
 
-Caching is done by Cloudflare Workers KV, which is a key-value store. Data which should never change is cached forever, such as [historical prices](src/routes/securities.ts#L116) for securities or [historical exchange rates](src/routes/fx.ts#L83) in a specific time period. Data that might change is cached for a short period of time, such as the [search results](src/routes/search.ts#L55) for a specific query.
+Caching is done by Cloudflare Workers KV, which is a key-value store. Data which should never change is cached forever, such as [historical prices for securities](src/routes/securities.ts#L116) or [historical exchange rates in a specific time period](src/routes/fx.ts#L83). Data that might change is cached for a short period of time, such as the [search results](src/routes/search.ts#L55) for a specific query.
 
 ## Demo
 
@@ -41,7 +41,7 @@ Response
 
 ### Fetch Apple's stock price on the NASDAQ between 2020-08-27 and 2020-09-04
 
-Note that the date formats should generally follow [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601): see the [documentation](https://opnfn.readme.io/reference/get_prices-exchange-mic-ticker-ticker-period-start-start-end-end) for this endpoint. However, anything supported by the JavaScript [`Date`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse) parser will also be supported in opnfn.
+Note that the date formats should follow [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601): see the [documentation](https://opnfn.readme.io/reference/get_prices-exchange-mic-ticker-ticker-period-start-start-end-end) for this endpoint. However, anything supported by the JavaScript [`Date`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse) parser will also be supported in opnfn.
 
 ```shell
 curl 'https://opnfn.com/v1/prices/exchange/XNAS/ticker/AAPL/period/start/2020-08-27/end/2020-09-04'
@@ -107,8 +107,8 @@ Response
 
 ### Why Vitest?
 
-Initially, I was planning on using Jest for the unit tests. However, Jest required a fair amount of configuration to get it to work with TypeScript. More specifically, it requires Babel to get this to work. I am trying to keep this project as bloat-free and minimal as possible which is why I ultimately decided against using Jest. 
+Initially, I was planning on using Jest for the unit tests. However, Jest required a fair amount of configuration to get it to work with TypeScript. More specifically, it requires Babel. I am trying to keep this project as bloat-free and minimal as possible which is why I ultimately decided against using Jest. 
 
-Another interesting route I experimented with was writing the tests with for Deno. The codebase doesn't use any npm libraries or Node-specific code so in theory, it should run in Deno. Deno's testing library doesn't require any special configuration meaning it was a potential fit for this project. However, Deno code requires explicitly naming file conventions in `import` statements. Doing this broke `tsc` which in turn broke `wrangler`. On top of that, using Deno and Node in the same project is a bit clunky. 
+Another interesting route I experimented with was writing the tests with Deno. The codebase utilises web APIs when possible instead of npm libraries, so the vast majority of functions used are also available in the Deno standard library. Deno's testing library also doesn't require any special configuration meaning it was a potential fit for this project. However, Deno code requires explicitly naming file extensions in `import` statements. Doing this broke `tsc` which in turn broke `wrangler`. On top of that, using Deno and Node in the same project is a bit clunky. 
 
 

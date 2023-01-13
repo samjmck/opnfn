@@ -3,7 +3,7 @@ import { HistoricalReadableStore, Interval, ReadableStore } from "../store";
 import { Currency, Money, OHLC } from "../money";
 import { micToExchange } from "../exchange";
 import { Cache } from "../cache";
-import { corsHeaders } from "./cors.js";
+import { corsHeaders } from "./cors";
 
 export type PriceResponse = Money;
 
