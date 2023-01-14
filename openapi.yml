@@ -38,6 +38,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchResults'
+  /profile/isin/{isin}:
+    get:
+      description: >
+        Get the profile of a security by using its ISIN
+      parameters:
+        - name: isin
+          in: path
+          required: true
+          description: The ISIN of the security you are searching
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The profile of the security
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
   /prices/exchange/{mic}/ticker/{ticker}/latest:
     get:
       description: >
@@ -379,6 +397,24 @@ components:
         - name: Apple Inc.
           ticker: APC
           exchange: XETR
+    Profile:
+      type: object
+      required:
+        - name
+        - securityType
+      properties:
+        name:
+          type: string
+        securityType:
+          type: string
+          enum:
+            - "stock"
+            - "etf"
+            - "other"
+        sector:
+          type: string
+        industry:
+          type: string
     Money:
       type: object
       required:

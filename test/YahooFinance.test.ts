@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { YahooFinance } from "../src/stores/YahooFinance";
-import { Interval, SearchResultItem } from "../src/store";
+import { Interval, SearchResultItem, SecurityType } from "../src/store";
 import { Exchange } from "../src/exchange";
 import { Currency } from "../src/money";
 
@@ -120,5 +120,17 @@ describe("YahooFinance", () => {
         );
 
         expect(multiplier).toBeGreaterThanOrEqual(224);
+    });
+
+    test("AAPL is a stock", async () => {
+        const { securityType } = await yahooFinance.getProfile("US0378331005");
+
+        expect(securityType).toBe(SecurityType.Stock);
+    });
+
+    test("IWDA is an ETF", async () => {
+        const { securityType } = await yahooFinance.getProfile("IE00B4L5Y983");
+
+        expect(securityType).toBe(SecurityType.ETF);
     });
 });

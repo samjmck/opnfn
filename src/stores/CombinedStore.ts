@@ -1,9 +1,9 @@
 import {
     HistoricalReadableFXStore,
     HistoricalReadableStore,
-    Interval,
+    Interval, ProfileStore,
     ReadableFXStore,
-    ReadableStore, SearchStore
+    ReadableStore, SearchStore, SecurityProfile
 } from "../store";
 import { Currency } from "../money";
 import { Exchange } from "../exchange";
@@ -79,7 +79,7 @@ export class CombinedReadableFXStore implements ReadableFXStore {
     }
 }
 
-export class CombinedHistoricalReadableFXStore {
+export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXStore {
     constructor(protected stores: HistoricalReadableFXStore[]) {}
 
     getExchangeRateAtClose(
@@ -104,5 +104,13 @@ export class CombinedHistoricalReadableFXStore {
             endTime,
             interval,
         ));
+    }
+}
+
+export class CombinedProfileStore implements ProfileStore {
+    constructor(protected stores: ProfileStore[]) {}
+
+    getProfile(isin: string): Promise<SecurityProfile> {
+        return retry(2, this.stores, store => store.getProfile(isin));
     }
 }

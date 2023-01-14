@@ -59,6 +59,32 @@ export interface Split {
     split: number;
 }
 
+export enum SecurityType {
+    Stock = "stock",
+    ETF = "etf",
+    MutualFund = "mutualfund",
+    REIT = "reit",
+    Other = "other",
+}
+
+export interface GenericSecurityProfile {
+    name: string;
+    securityType: SecurityType;
+}
+
+export interface StockProfile {
+    name: string;
+    securityType: SecurityType.Stock;
+    sector: string;
+    industry: string;
+}
+
+export type SecurityProfile = GenericSecurityProfile | StockProfile;
+
+export interface ProfileStore {
+    getProfile(isin: string): Promise<SecurityProfile>;
+}
+
 export interface StockSplitStore {
     getStockSplitTotalMultiplier(since: Date, exchange: Exchange, ticker: string): Promise<number>;
     getStockSplits(

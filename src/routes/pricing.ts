@@ -14,7 +14,7 @@ export type HistoricalPriceResponse = {
     prices: ({ time: string } & OHLC)[];
 };
 
-export function registerSecuritiesRoutes(
+export function registerPricingRoutes(
     router: Router,
     readableStore: ReadableStore,
     historicalReadableStore: HistoricalReadableStore,

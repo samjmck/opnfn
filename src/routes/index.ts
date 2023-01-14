@@ -1,14 +1,15 @@
 import { Router } from "itty-router";
 import { YahooFinance } from "../stores/YahooFinance";
 import {
-	CombinedHistoricalReadableFXStore, CombinedHistoricalReadableStore,
+	CombinedHistoricalReadableFXStore, CombinedHistoricalReadableStore, CombinedProfileStore,
 	CombinedReadableFXStore,
 	CombinedReadableStore, CombinedSearchStore
 } from "../stores/CombinedStore";
-import { registerSecuritiesRoutes } from "./securities";
+import { registerPricingRoutes } from "./pricing";
 import { registerFxRoutes } from "./fx";
 import { registerSearchRoutes } from "./search";
 import { KVCache } from "../cache";
+import { registerProfileRoutes } from "./profile";
 
 declare const OPNFN_KV: KVNamespace;
 
@@ -24,7 +25,7 @@ const combinedReadableStore = new CombinedReadableStore([
 const combinedHistoricalReadableStore = new CombinedHistoricalReadableStore([
 	yahooFinance,
 ]);
-registerSecuritiesRoutes(
+registerPricingRoutes(
 	router,
 	combinedReadableStore,
 	combinedHistoricalReadableStore,
@@ -50,6 +51,15 @@ const combinedSearchStore = new CombinedSearchStore([
 registerSearchRoutes(
 	router,
 	combinedSearchStore,
+	cache,
+);
+
+const combinedProfileStore = new CombinedProfileStore([
+	yahooFinance,
+]);
+registerProfileRoutes(
+	router,
+	combinedProfileStore,
 	cache,
 );
 

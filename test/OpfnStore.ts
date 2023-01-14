@@ -1,26 +1,34 @@
 import {
     HistoricalReadableFXStore,
     HistoricalReadableStore,
-    Interval,
+    Interval, ProfileStore,
     ReadableFXStore,
     ReadableStore,
     SearchResultItem,
     SearchStore
 } from "../src/store";
 import { Exchange, exchangeToOperatingMic, micToExchange } from "../src/exchange";
-import { Currency, Money, OHLC } from "../src/money";
+import { Currency, OHLC } from "../src/money";
 import { SearchResponse } from "../src/routes/search";
 import { ExchangeRateCloseResponse, ExchangeRateResponse, HistoricalExchangeRateResponse } from "../src/routes/fx";
-import { HistoricalPriceResponse, PriceCloseResponse, PriceResponse } from "../src/routes/securities";
+import { HistoricalPriceResponse, PriceCloseResponse, PriceResponse } from "../src/routes/pricing";
+import { ProfileResponse } from "../src/routes/profile";
 
 export class OpnfnStore implements
     SearchStore,
     ReadableStore,
     ReadableFXStore,
     HistoricalReadableStore,
-    HistoricalReadableFXStore
+    HistoricalReadableFXStore,
+    ProfileStore
 {
     constructor(private baseUrl = "https://opnfn.com/v1") {}
+
+    async getProfile(isin: string) {
+        const response = await fetch(`${this.baseUrl}/profile/isin/${isin}`);
+        const json = await response.json<ProfileResponse>();
+        return json;
+    }
 
     async search(query: string) {
         const response = await fetch(`${this.baseUrl}/search?query=${query}`);

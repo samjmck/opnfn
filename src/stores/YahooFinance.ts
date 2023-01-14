@@ -1,14 +1,26 @@
 import {
+    GenericSecurityProfile,
     HistoricalReadableFXStore,
     HistoricalReadableStore,
     Interval,
     ReadableFXStore,
-    ReadableStore, SearchResultItem, SearchStore,
+    ReadableStore, SearchResultItem, SearchStore, SecurityType,
     Split,
     StockSplitStore
 } from "../store";
 import { Currency, moneyAmountStringToInteger, OHLC, stringToCurrency } from "../money";
 import { Exchange } from "../exchange";
+
+function getSecurityType(quoteType: string): SecurityType {
+    switch(quoteType) {
+        case "ETF":
+            return SecurityType.ETF;
+        case "EQUITY":
+            return SecurityType.Stock;
+        default:
+            return SecurityType.Other;
+    }
+}
 
 function getCompatibleExchangeSuffix(exchange: Exchange) {
     switch(exchange) {
@@ -185,6 +197,34 @@ export class YahooFinance implements
             }
         }
         return results;
+    }
+
+    async getProfile(isin: string) {
+        const response = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${isin}&newsCount=0&listsCount=0`);
+        if(!response.ok) {
+            throw new Error(`YahooFinance search request failed for ISIN "${isin}"\n${await response.text()}`);
+        }
+
+        const json = <YahooFinanceSearchResponse> (await response.json());
+        if (json.quotes.length === 0) {
+            throw new Error(`Empty search result for ISIN "${isin}"`);
+        }
+
+        const securityType = getSecurityType(json.quotes[0].quoteType);
+        const baseProfile: GenericSecurityProfile = {
+            name: json.quotes[0].longname || json.quotes[0].shortname,
+            securityType: getSecurityType(json.quotes[0].quoteType),
+        };
+        switch(securityType) {
+            case SecurityType.Stock:
+                return {
+                    ...baseProfile,
+                    sector: json.quotes[0].sector || "Unknown",
+                    industry: json.quotes[0].industry || "Unknown",
+                };
+            default:
+                return baseProfile;
+        }
     }
 
     async getExchangeRate(
