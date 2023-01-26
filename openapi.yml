@@ -169,7 +169,7 @@ paths:
                 $ref: '#/components/schemas/ExchangeRate'
         '500':
           $ref: '#/components/responses/serverError'
-  /fx/from/{fromCurrency}/to/{toCurrency}/historical/start/{start}/end/{end}:
+  /fx/from/{fromCurrency}/to/{toCurrency}/period/start/{start}/end/{end}:
     get:
       description: >
         Fetch the historical exchange rates between two dates for a given currency pair. 
