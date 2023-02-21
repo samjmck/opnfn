@@ -1,0 +1,17 @@
+services:
+  cache:
+    image: redis:7.0.8-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./:/data
+    command: redis-server --save 60 1 --loglevel warning
+  opnfn:
+    image: opnfn
+    restart: always
+    ports:
+      - "8787:8787"
+    depends_on:
+      - cache
+    command: npx miniflare dist/index.js --kv-persist redis://cache:6379
