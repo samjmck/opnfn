@@ -29,3 +29,5 @@ npx miniflare dist/index.js --kv-persist redis://localhost:6379
 2. Run `docker-compose up -d`
 
 The Redis cache data will be saved into `dump.rdb` in the working directory where the Docker compose file is located.
+
+> Receiving a `port is already allocated` error? Try running `docker-compose down --remove-orphans` first.

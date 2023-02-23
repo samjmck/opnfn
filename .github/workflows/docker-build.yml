@@ -22,5 +22,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          platforms: linux/arm64/v8, linux/amd64
           push: true
           tags: samjmck/opnfn:latest
