@@ -142,6 +142,8 @@ export function micToExchange(mic: string): Exchange {
             return Exchange.LondonStockExchange;
         case "XTSE":
             return Exchange.TorontoStockExchange;
+        case "XTAI":
+            return Exchange.TaiwanStockExchange;
         case "XSWX":
             return Exchange.SIXSwissExchange;
         case "XFRA":
