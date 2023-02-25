@@ -5,13 +5,14 @@ import {
     ReadableFXStore,
     ReadableStore,
     SearchResultItem,
-    SearchStore
+    SearchStore, Split, StockSplitStore
 } from "../src/store";
 import { Exchange, exchangeToOperatingMic, micToExchange } from "../src/exchange";
 import { Currency, OHLC } from "../src/money";
 import { SearchResponse } from "../src/routes/search";
 import { ExchangeRateCloseResponse, ExchangeRateResponse, HistoricalExchangeRateResponse } from "../src/routes/fx";
 import { HistoricalPriceResponse, PriceCloseResponse, PriceResponse } from "../src/routes/pricing";
+import { StockSplitsResponse } from "../src/routes/stock-splits";
 import { ProfileResponse } from "../src/routes/profile";
 
 export class OpnfnStore implements
@@ -20,14 +21,46 @@ export class OpnfnStore implements
     ReadableFXStore,
     HistoricalReadableStore,
     HistoricalReadableFXStore,
-    ProfileStore
+    ProfileStore,
+    StockSplitStore
 {
     constructor(private baseUrl = "https://opnfn.com/v1") {}
 
     async getProfile(isin: string) {
-        const response = await fetch(`${this.baseUrl}/profile/isin/${isin}`);
+        const response = await fetch(`${this.baseUrl}/profiles/isin/${isin}`);
         const json = await response.json<ProfileResponse>();
         return json;
+    }
+
+    async getStockSplitTotalMultiplier(
+        since: Date,
+        exchange: Exchange,
+        ticker: string
+    ) {
+        const splits = await this.getStockSplits(since, new Date(), exchange, ticker);
+        let multiplier = 1;
+        for(const { split: splitMultiplier } of splits) {
+            multiplier *= splitMultiplier;
+        }
+        return multiplier;
+    }
+
+    async getStockSplits(
+        startTime: Date,
+        endTime: Date,
+        exchange: Exchange,
+        ticker: string,
+    ) {
+        const response = await fetch(`${this.baseUrl}/stock_splits/exchange/${exchangeToOperatingMic(exchange)}/ticker/${ticker}/start/${startTime.toISOString()}/end/${endTime.toISOString()}`);
+        const json = await response.json<StockSplitsResponse>();
+        const results = <Split[]> [];
+        for(const result of json) {
+            results.push({
+                time: new Date(result.time),
+                split: result.split,
+            });
+        }
+        return results;
     }
 
     async search(query: string) {

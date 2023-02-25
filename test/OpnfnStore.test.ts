@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { Interval, SearchResultItem } from "../src/store";
+import { Interval, SearchResultItem, SecurityType } from "../src/store";
 import { Exchange } from "../src/exchange";
 import { Currency } from "../src/money";
 import { OpnfnStore } from "./OpfnStore";
@@ -101,5 +101,36 @@ describe("opnfn REST API", () => {
         const price = await opnfn.getByTicker(Exchange.Nasdaq, "AAPL");
 
         expect(price.amount).toBeGreaterThan(0);
+    });
+
+    test("AAPL stock splits between December 12 1980 and September 2 2020", async () => {
+        const splits = await opnfn.getStockSplits(
+            new Date("1980-01-12"),
+            new Date("2020-09-02"),
+            Exchange.Nasdaq, "AAPL"
+        );
+
+        expect(splits.length).toBe(5);
+    });
+
+    test("AAPL total stock split multiplier between December 12 1980 and September 2 2020", async () => {
+        const multiplier = await opnfn.getStockSplitTotalMultiplier(
+            new Date("1980-01-12"),
+            Exchange.Nasdaq, "AAPL"
+        );
+
+        expect(multiplier).toBeGreaterThanOrEqual(224);
+    });
+
+    test("AAPL is a stock", async () => {
+        const { securityType } = await opnfn.getProfile("US0378331005");
+
+        expect(securityType).toBe(SecurityType.Stock);
+    });
+
+    test("IWDA is an ETF", async () => {
+        const { securityType } = await opnfn.getProfile("IE00B4L5Y983");
+
+        expect(securityType).toBe(SecurityType.ETF);
     });
 });

@@ -3,13 +3,14 @@ import { YahooFinance } from "../stores/YahooFinance";
 import {
 	CombinedHistoricalReadableFXStore, CombinedHistoricalReadableStore, CombinedProfileStore,
 	CombinedReadableFXStore,
-	CombinedReadableStore, CombinedSearchStore
+	CombinedReadableStore, CombinedSearchStore, CombinedStockSplitStore
 } from "../stores/CombinedStore";
 import { registerPricingRoutes } from "./pricing";
 import { registerFxRoutes } from "./fx";
 import { registerSearchRoutes } from "./search";
 import { KVCache } from "../cache";
-import { registerProfileRoutes } from "./profile";
+import { registerStockSplitsRoute } from "./stock-splits";
+import { registerProfileRoute } from "./profile";
 
 declare const OPNFN_KV: KVNamespace;
 
@@ -57,10 +58,18 @@ registerSearchRoutes(
 const combinedProfileStore = new CombinedProfileStore([
 	yahooFinance,
 ]);
-registerProfileRoutes(
+registerProfileRoute(
 	router,
 	combinedProfileStore,
 	cache,
+);
+
+const combinedStockSplitStore = new CombinedStockSplitStore([
+	yahooFinance,
+]);
+registerStockSplitsRoute(
+	router,
+	combinedStockSplitStore,
 );
 
 addEventListener("fetch", event => {

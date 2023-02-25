@@ -1,7 +1,7 @@
-import { corsHeaders } from "./cors";
 import { ProfileStore, SecurityType } from "../store";
 import { Router } from "itty-router";
 import { Cache } from "../cache";
+import { corsHeaders } from "./cors";
 
 export type ProfileResponse = {
     name: string;
@@ -10,17 +10,17 @@ export type ProfileResponse = {
     industry?: string;
 };
 
-export function registerProfileRoutes(
+export function registerProfileRoute(
     router: Router,
     profileStore: ProfileStore,
     cache: Cache,
 ) {
-    router.get("/profile/isin/:isin", async(request, event) => {
-        const { isin } = <{ isin: string }> request.params;
+    router.get("/profiles/isin/:isin", async (request, event) => {
+        const {isin} = <{ isin: string }>request.params;
 
-        const cacheKey = `/profile/${isin}`;
+        const cacheKey = `/profiles/isin/${isin}`;
         const cachedResponse = await cache.get<string>(cacheKey);
-        if(cachedResponse) {
+        if (cachedResponse) {
             return new Response(
                 cachedResponse,
                 {
@@ -35,7 +35,7 @@ export function registerProfileRoutes(
 
         try {
             const profile = await profileStore.getProfile(isin);
-            const jsonResponse = JSON.stringify(<ProfileResponse> profile);
+            const jsonResponse = JSON.stringify(<ProfileResponse>profile);
             const response = new Response(
                 jsonResponse,
                 {
@@ -48,9 +48,9 @@ export function registerProfileRoutes(
             );
             event.waitUntil(cache.put(cacheKey, jsonResponse));
             return response;
-        } catch(error) {
+        } catch (error) {
             return new Response(
-                JSON.stringify({ error }),
+                JSON.stringify({error}),
                 {
                     status: 500,
                     headers: {

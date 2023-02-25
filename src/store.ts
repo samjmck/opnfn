@@ -61,8 +61,9 @@ export interface Split {
 
 export enum SecurityType {
     Stock = "stock",
+    Bond = "bond",
     ETF = "etf",
-    MutualFund = "mutualfund",
+    MutualFund = "mutual_fund",
     REIT = "reit",
     Other = "other",
 }

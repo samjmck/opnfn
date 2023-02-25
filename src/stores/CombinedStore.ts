@@ -3,7 +3,7 @@ import {
     HistoricalReadableStore,
     Interval, ProfileStore,
     ReadableFXStore,
-    ReadableStore, SearchStore, SecurityProfile
+    ReadableStore, SearchStore, SecurityProfile, StockSplitStore
 } from "../store";
 import { Currency } from "../money";
 import { Exchange } from "../exchange";
@@ -104,6 +104,27 @@ export class CombinedHistoricalReadableFXStore implements HistoricalReadableFXSt
             endTime,
             interval,
         ));
+    }
+}
+
+export class CombinedStockSplitStore implements StockSplitStore {
+    constructor(protected stores: StockSplitStore[]) {}
+
+    getStockSplitTotalMultiplier(
+        since: Date,
+        exchange: Exchange,
+        ticker: string,
+    ) {
+        return retry(2, this.stores, store => store.getStockSplitTotalMultiplier(since, exchange, ticker));
+    }
+
+    getStockSplits(
+        startTime: Date,
+        endTime: Date,
+        exchange: Exchange,
+        ticker: string,
+    ) {
+        return retry(2, this.stores, store => store.getStockSplits(startTime, endTime, exchange, ticker));
     }
 }
 

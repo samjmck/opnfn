@@ -38,7 +38,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchResults'
-  /profile/isin/{isin}:
+  /profiles/isin/{isin}:
     get:
       description: >
         Get the profile of a security by using its ISIN
@@ -56,6 +56,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Profile'
+  /stock_splits/exchange/{mic}/ticker/{ticker}/start/{start}/end/{end}:
+    get:
+      description: >
+        Get the stock splits of a security by using its ISIN between the given start and end date
+      parameters:
+        - $ref: '#/components/parameters/mic'
+        - $ref: '#/components/parameters/ticker'
+        - name: start
+          in: path
+          required: true
+          description: The start date in ISO 8601
+          example: 2020-08-27T00:00:00.000Z
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: path
+          required: true
+          description: The end date in ISO 8601
+          example: 2020-09-04T00:00:00.000Z
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '202':
+          description: The stock splits of that security
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockSplits'
+        '500':
+          description: A server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /prices/exchange/{mic}/ticker/{ticker}/latest:
     get:
       description: >
@@ -409,7 +445,10 @@ components:
           type: string
           enum:
             - "stock"
+            - "bond"
             - "etf"
+            - "mutual_fund"
+            - "reit"
             - "other"
         sector:
           type: string
@@ -533,6 +572,18 @@ components:
             high: 0.973501
             low: 0.975229
             close: 0.968251
+    StockSplits:
+      type: array
+      items:
+        type: object
+        required:
+          - time
+          - split
+        properties:
+          time:
+            $ref: '#/components/schemas/Time'
+          split:
+            type: number
     Error:
       type: object
       required:
