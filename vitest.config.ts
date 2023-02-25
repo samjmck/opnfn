@@ -5,7 +5,7 @@ export default defineConfig({
         environment: "miniflare",
         exclude: [
             ...configDefaults.exclude,
-            // "test/OpnfnStore.test.ts",
+            "test/OpnfnStore.test.ts",
         ]
     },
 });
