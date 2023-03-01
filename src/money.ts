@@ -7,7 +7,7 @@ export enum Currency {
     CHF = "CHF",
     JPY = "JPY",
     AUD = "AUD",
-    MXN = "MXN",
+    DKK = "DKK",
 }
 
 export function stringToCurrency(value: string): Currency {
@@ -27,10 +27,10 @@ export function stringToCurrency(value: string): Currency {
             return Currency.JPY;
         case "AUD":
             return Currency.AUD;
-        case "MXN":
-            return Currency.MXN;
+        case "DKK":
+            return Currency.DKK;
         default:
-            return Currency.USD;
+            throw new Error(`Could not find currency "${value}"`);
     }
 }
 
