@@ -1,0 +1,11 @@
+/search
+/securities/{isin} (profile)
+/securities/{isin}/dividends
+/securities/{isin}/stock_splits
+/securities/{isin}/exchanges
+
+/prices/{mic}/{ticker}/period/{start}/{end}
+/prices/{mic}/{ticker}/latest
+
+/fx/{from}/{to}/period/{start}/{end}
+/fx/{from}/{to}/latest

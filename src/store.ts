@@ -87,11 +87,11 @@ export interface ProfileStore {
 }
 
 export interface StockSplitStore {
-    getStockSplitTotalMultiplier(since: Date, exchange: Exchange, ticker: string): Promise<number>;
+    getStockSplitTotalMultiplier(isin: string, since: Date, exchange: Exchange): Promise<number>;
     getStockSplits(
+        isin: string,
         startTime: Date,
         endTime: Date,
         exchange: Exchange,
-        ticker: string,
     ): Promise<Split[]>
 }

@@ -199,6 +199,14 @@ export class YahooFinance implements
         return results;
     }
 
+    private async getMainExchangeTickerPair(isin: string): Promise<{exchange: Exchange, ticker: string}> {
+        const searchResults = await this.search(isin);
+        if (searchResults.length === 0) {
+            throw new Error(`No ticker found for ISIN ${isin}`);
+        }
+        return searchResults[0];
+    }
+
     async getProfile(isin: string) {
         const response = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${isin}&newsCount=0&listsCount=0`);
         if(!response.ok) {
@@ -392,7 +400,7 @@ export class YahooFinance implements
         let splits: Split[] = [];
         let sharesMultiplier = 1;
         if(!adjustedForSplits) {
-            splits = await this.getStockSplits(startTime, new Date(), exchange, ticker);
+            splits = await this.getExchangeTickerStockSplits(exchange, ticker, startTime, new Date());
             for(const { split } of splits) {
                 sharesMultiplier *= split;
             }
@@ -451,11 +459,11 @@ export class YahooFinance implements
         };
     }
 
-    async getStockSplits(
-        startTime: Date,
-        endTime: Date,
+    private async getExchangeTickerStockSplits(
         exchange: Exchange,
         ticker: string,
+        startTime: Date,
+        endTime: Date,
     ): Promise<Split[]> {
         const secondsSinceEpoch = Math.floor(startTime.valueOf() / 1000);
         const endSecondsSinceEpoch = Math.floor(endTime.valueOf() / 1000);
@@ -484,12 +492,21 @@ export class YahooFinance implements
         return splits.sort((a, b) => a.time.valueOf() - b.time.valueOf());
     }
 
+    async getStockSplits(
+        isin: string,
+        startTime: Date,
+        endTime: Date,
+    ): Promise<Split[]> {
+        const { exchange, ticker } = await this.getMainExchangeTickerPair(isin);
+
+        return this.getExchangeTickerStockSplits(exchange, ticker, startTime, endTime);
+    }
+
     async getStockSplitTotalMultiplier(
+        isin: string,
         since: Date,
-        exchange: Exchange,
-        ticker: string,
     ): Promise<number> {
-        const splits = await this.getStockSplits(since, new Date(), exchange, ticker);
+        const splits = await this.getStockSplits(isin, since, new Date());
         let multiplier = 1;
         for(const { split: splitMultiplier } of splits) {
             multiplier *= splitMultiplier;
