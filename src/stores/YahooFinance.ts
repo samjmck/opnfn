@@ -63,6 +63,8 @@ function getCompatibleExchangeSuffix(exchange: Exchange) {
             return "T";
         case Exchange.LondonStockExchangeIOB:
             return "IL";
+        case Exchange.NasdaqStockholm:
+            return "ST";
         default:
             return "";
     }
@@ -112,6 +114,8 @@ function searchExchangeResultToExchange(exchange: string): Exchange {
             return Exchange.TokyoStockExchange;
         case "IOB":
             return Exchange.LondonStockExchangeIOB;
+        case "STO":
+            return Exchange.NasdaqStockholm;
         default:
             throw new Error(`could not find exchange for Yahoo Finance search result exchange "${exchange}"`);
     }
@@ -337,10 +341,16 @@ export class YahooFinance implements
             if(time.valueOf() > endTime.valueOf()) {
                 break;
             }
+
+            if(columns[1] == "null" || columns[2] == "null" || columns[3] == "null" || columns[4] == "null") {
+                continue;
+            }
+
             const open = Number(columns[1]) * multiplier;
             const high = Number(columns[1]) * multiplier;
             const low = Number(columns[2]) * multiplier;
             const close = Number(columns[3]) * multiplier;
+
             historicPriceMap.set(time, {
                 open,
                 high,
@@ -415,6 +425,10 @@ export class YahooFinance implements
                 splits.splice(0, 1);
             }
 
+            if(columns[1] == "null" || columns[2] == "null" || columns[3] == "null" || columns[4] == "null") {
+                continue;
+            }
+
             const open = Math.floor(moneyAmountStringToInteger(columns[1], ".", 2) * sharesMultiplier);
             const high = Math.floor(moneyAmountStringToInteger(columns[2], ".", 2) * sharesMultiplier);
             const low = Math.floor(moneyAmountStringToInteger(columns[3], ".", 2) * sharesMultiplier);
@@ -475,10 +489,12 @@ export class YahooFinance implements
         for(const row of rows.slice(1)) {
             const [date, splitString] = row.split(",");
             const splitNumbers = splitString.split(":");
+            const numerator = Number(splitNumbers[0]);
+            const denominator = Number(splitNumbers[1]);
             splits.push({
                 time: new Date(date),
-                split: Number(splitNumbers[0]),
-            })
+                split: numerator / denominator,
+            });
         }
 
         return splits.sort((a, b) => a.time.valueOf() - b.time.valueOf());

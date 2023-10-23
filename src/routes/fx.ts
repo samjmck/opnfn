@@ -57,6 +57,8 @@ export function registerFxRoutes(
         const { interval } =
             <{ interval?: Interval }> request.query;
 
+        console.log("call");
+
         const cacheKey = `/fx/from/${from}/to/${to}/period/start/${startTimeString}/end/${endTimeString}?interval=${interval}`;
         const cachedResponse = await cache.get<string>(cacheKey);
         if(cachedResponse) {
